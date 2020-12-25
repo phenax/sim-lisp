@@ -11,6 +11,7 @@ data Expression
   | LString String
   | LList [Expression]
   | LFunction String [Expression]
+  deriving (Show)
 
 instance Eq Expression where
   (==) (LInteger a) (LInteger b) = a == b
@@ -19,11 +20,11 @@ instance Eq Expression where
   (==) (LFunction a1 b1) (LFunction a2 b2) = a1 == a2 && b1 == b2
   (==) _ _ = False
 
-instance Show Expression where
-  show (LInteger n) = show n
-  show (LString s) = "\"" ++ s ++ "\""
-  show (LList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
-  show (LFunction op lst) = "(" ++ op ++ " " ++ (unwords . map show $ lst) ++ ")"
+--instance Show Expression where
+--show (LInteger n) = show n
+--show (LString s) = "\"" ++ s ++ "\""
+--show (LList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
+--show (LFunction op lst) = "(" ++ op ++ " " ++ (unwords . map show $ lst) ++ ")"
 
 whitespace :: Parsec String u String
 whitespace = many $ oneOf " \n\t"
