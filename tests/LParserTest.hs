@@ -31,15 +31,21 @@ valueParsers = do
 
 expressionParsers = do
   let parseValue = parse expressionP "Expr"
-   in describe "expressionP - function call" $ do
-        --it "should parse function call with one argument" $ do
-        --parseValue "1" `shouldBe` Right (LInteger 1)
+   in describe "expressionP" $ do
+        it "should parse function call with one argument" $ do
+          parseValue "1" `shouldBe` Right (LInteger 1)
+
+        it "should parse function call with one argument" $ do
+          parseValue "\"hello world\"" `shouldBe` Right (LString "hello world")
 
         it "should parse function call with one argument" $ do
           parseValue "(+ 1)" `shouldBe` Right (LFunction "+" [LInteger 1])
 
         it "should parse function call with multiple arguments" $ do
           parseValue "(+ 1 2)" `shouldBe` Right (LFunction "+" [LInteger 1, LInteger 2])
+
+        it "should parse named function call" $ do
+          parseValue "(incrementBy 1 20)" `shouldBe` Right (LFunction "incrementBy" [LInteger 1, LInteger 20])
 
         it "should parse nested expressions" $ do
           parseValue "(+ 1 (- 3 2))" `shouldBe` Right (LFunction "+" [LInteger 1, LFunction "-" [LInteger 3, LInteger 2]])
