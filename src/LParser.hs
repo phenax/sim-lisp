@@ -77,5 +77,10 @@ multipleExpressionsP = withWhitespace $ expressionP `sepBy` whitespace
 
 tokenize = parse multipleExpressionsP "LithParserError"
 
+evaluate = print
+
+interpret :: String -> IO ()
+interpret = evaluate . tokenize
+
 --
 --

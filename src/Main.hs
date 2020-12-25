@@ -1,6 +1,6 @@
 module Main where
 
-import LParser (tokenize)
+import LParser (interpret)
 import System.Environment
 import System.IO
 
@@ -13,12 +13,12 @@ repl = do
     ":quit" -> return ()
     expr -> do
       putStrLn ""
-      print . tokenize $ expr
+      interpret expr
       repl
 
 interpretFile f = do
   contents <- readFile f
-  print . tokenize $ contents
+  interpret contents
 
 main :: IO ()
 main = do
