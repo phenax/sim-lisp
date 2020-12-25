@@ -56,7 +56,7 @@ listP = do
   return $ LList exprs
 
 symbolP :: Parsec String u Expression
-symbolP = fmap Symbol $ many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
+symbolP = fmap Symbol $ many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'', '<', '>', '=', '!', '%', '&', '.', ':', '?', '@', '$', '^']
 
 valueP :: Parsec String u Expression
 valueP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "wtf value is this dude?")

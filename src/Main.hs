@@ -1,6 +1,7 @@
 module Main where
 
 import LParser (tokenize)
+import System.Environment
 import System.IO
 
 ask q = putStr q >> hFlush stdout >> getLine
@@ -15,5 +16,14 @@ repl = do
       print . tokenize $ expr
       repl
 
+interpretFile f = do
+  contents <- readFile f
+  print . tokenize $ contents
+
 main :: IO ()
-main = repl
+main = do
+  args <- getArgs
+  case args of
+    [] -> repl
+    ["repl"] -> repl
+    (file : _) -> interpretFile file
