@@ -39,9 +39,9 @@ valueParsers = do
             `shouldBe` Right
               ( LList
                   [ LInteger 1,
-                    SExpression "+" [LInteger 5, LInteger 2],
+                    SExpression (Symbol "+") [LInteger 5, LInteger 2],
                     LInteger 4,
-                    SExpression "/" [LInteger 12, LInteger 6]
+                    SExpression (Symbol "/") [LInteger 12, LInteger 6]
                   ]
               )
 
@@ -55,25 +55,25 @@ expressionParsers = do
           parseValue "\"hello world\"" `shouldBe` Right (LString "hello world")
 
         it "should parse function call with one argument" $ do
-          parseValue "(+ 1)" `shouldBe` Right (SExpression "+" [LInteger 1])
+          parseValue "(+ 1)" `shouldBe` Right (SExpression (Symbol "+") [LInteger 1])
 
         it "should parse function call with multiple arguments" $ do
-          parseValue "(+ 1 2)" `shouldBe` Right (SExpression "+" [LInteger 1, LInteger 2])
+          parseValue "(+ 1 2)" `shouldBe` Right (SExpression (Symbol "+") [LInteger 1, LInteger 2])
 
         it "should parse named function call" $ do
-          parseValue "(incrementBy 1 20)" `shouldBe` Right (SExpression "incrementBy" [LInteger 1, LInteger 20])
+          parseValue "(incrementBy 1 20)" `shouldBe` Right (SExpression (Symbol "incrementBy") [LInteger 1, LInteger 20])
 
         it "should parse nested expressions" $ do
-          parseValue "(+ 1 (- 3 2))" `shouldBe` Right (SExpression "+" [LInteger 1, SExpression "-" [LInteger 3, LInteger 2]])
+          parseValue "(+ 1 (- 3 2))" `shouldBe` Right (SExpression (Symbol "+") [LInteger 1, SExpression (Symbol "-") [LInteger 3, LInteger 2]])
 
         it "should parse with any whitespace" $ do
-          parseValue " (\t+    1 (  \n  - 3  \t  2))" `shouldBe` Right (SExpression "+" [LInteger 1, SExpression "-" [LInteger 3, LInteger 2]])
+          parseValue " (\t+    1 (  \n  - 3  \t  2))" `shouldBe` Right (SExpression (Symbol "+") [LInteger 1, SExpression (Symbol "-") [LInteger 3, LInteger 2]])
 
   let parseValue = parse multipleExpressionsP "MultipleExpr"
    in describe "multipleExpressionsP" $ do
         it "should parse multiple expressions" $ do
           parseValue "(+ 1 (- 3 2)) (+ 3 (* 9 6))"
             `shouldBe` Right
-              [ SExpression "+" [LInteger 1, SExpression "-" [LInteger 3, LInteger 2]],
-                SExpression "+" [LInteger 3, SExpression "*" [LInteger 9, LInteger 6]]
+              [ SExpression (Symbol "+") [LInteger 1, SExpression (Symbol "-") [LInteger 3, LInteger 2]],
+                SExpression (Symbol "+") [LInteger 3, SExpression (Symbol "*") [LInteger 9, LInteger 6]]
               ]

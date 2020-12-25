@@ -11,11 +11,12 @@ data Expression
   | LString String
   | Symbol String
   | LList [Expression]
-  | SExpression String [Expression]
+  | SExpression Expression [Expression] -- Find way to use Symbol inside SExpression
 
 instance Eq Expression where
   (==) (LInteger a) (LInteger b) = a == b
   (==) (LString a) (LString b) = a == b
+  (==) (Symbol a) (Symbol b) = a == b
   (==) (LList a) (LList b) = a == b
   (==) (SExpression a1 b1) (SExpression a2 b2) = a1 == a2 && b1 == b2
   (==) _ _ = False
@@ -23,9 +24,9 @@ instance Eq Expression where
 instance Show Expression where
   show (LInteger n) = show n
   show (LString s) = "\"" ++ s ++ "\""
-  show (Symbol s) = "(symbol) " ++ s
+  show (Symbol s) = s
   show (LList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
-  show (SExpression op lst) = "(" ++ op ++ " " ++ (unwords . map show $ lst) ++ ")"
+  show (SExpression op lst) = "(" ++ show op ++ " " ++ (unwords . map show $ lst) ++ ")"
 
 whitespace :: Parsec String u String
 whitespace = many $ oneOf [' ', '\n', '\t']
@@ -54,11 +55,8 @@ listP = do
   whitespace
   return $ LList exprs
 
-getSymbol :: Parsec String u String
-getSymbol = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
-
 symbolP :: Parsec String u Expression
-symbolP = fmap Symbol getSymbol
+symbolP = fmap Symbol $ many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
 
 valueP :: Parsec String u Expression
 valueP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "wtf value is this dude?")
@@ -66,7 +64,7 @@ valueP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "wtf valu
 sExpressionP = withWhitespace $ do
   char '('
   whitespace
-  op <- getSymbol
+  op <- symbolP
   whitespace
   arg <- (valueP <|> sExpressionP) `sepBy` whitespace
   whitespace
