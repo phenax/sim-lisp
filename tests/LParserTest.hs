@@ -51,7 +51,7 @@ expressionParsers = do
           parseValue "(+ 1 (- 3 2))" `shouldBe` Right (LFunction "+" [LInteger 1, LFunction "-" [LInteger 3, LInteger 2]])
 
         it "should parse with any whitespace" $ do
-          parseValue "(+    1 (  \n  - 3  \t  2))" `shouldBe` Right (LFunction "+" [LInteger 1, LFunction "-" [LInteger 3, LInteger 2]])
+          parseValue " (\t+    1 (  \n  - 3  \t  2))" `shouldBe` Right (LFunction "+" [LInteger 1, LFunction "-" [LInteger 3, LInteger 2]])
 
   let parseValue = parse multipleExpressionsP "MultipleExpr"
    in describe "multipleExpressionsP" $ do

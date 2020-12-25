@@ -28,6 +28,13 @@ instance Show Expression where
 whitespace :: Parsec String u String
 whitespace = many $ oneOf [' ', '\n', '\t']
 
+withWhitespace :: Parsec String u a -> Parsec String u a
+withWhitespace comb = do
+  whitespace
+  content <- comb
+  whitespace
+  return content
+
 numberP :: Parsec String u Expression
 numberP = LInteger . (\x -> read x :: Integer) <$> many1 digit
 
@@ -42,7 +49,7 @@ valueP = numberP <|> stringP <?> "wtf value is this dude?"
 variableNameP :: Parsec String u String
 variableNameP = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
 
-functionP = do
+functionP = withWhitespace $ do
   char '('
   whitespace
   op <- variableNameP
@@ -50,19 +57,10 @@ functionP = do
   arg <- (functionP <|> valueP) `sepBy` whitespace
   whitespace
   char ')'
-  whitespace
   return $ LFunction op arg
 
-expressionP = do
-  whitespace
-  content <- functionP <|> valueP
-  whitespace
-  return content
+expressionP = withWhitespace $ functionP <|> valueP
 
-multipleExpressionsP = do
-  whitespace
-  exprs <- expressionP `sepBy` whitespace
-  whitespace
-  return exprs
+multipleExpressionsP = withWhitespace $ expressionP `sepBy` whitespace
 
 tokenize = parse multipleExpressionsP "LithParserError"
