@@ -23,7 +23,7 @@ instance Show Expression where
   show (LInteger n) = show n
   show (LString s) = "\"" ++ s ++ "\""
   show (LList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
-  show (LFunction op lst) = "(" ++ op ++ " " ++ show (LList lst) ++ ")"
+  show (LFunction op lst) = "(" ++ op ++ " " ++ (unwords . map show $ lst) ++ ")"
 
 whitespace :: Parsec String u String
 whitespace = many $ oneOf " \n\t"
@@ -44,9 +44,11 @@ variableNameP = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
 
 functionP = do
   char '('
+  whitespace
   op <- variableNameP
   whitespace
-  arg <- (functionP <|> valueP) `sepBy` char ' '
+  arg <- (functionP <|> valueP) `sepBy` whitespace
+  whitespace
   char ')'
   return $ LFunction op arg
 

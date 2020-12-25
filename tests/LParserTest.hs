@@ -37,3 +37,9 @@ expressionParsers = do
 
         it "should parse function call with multiple arguments" $ do
           parseValue "(+ 1 2)" `shouldBe` Right (LFunction "+" [LInteger 1, LInteger 2])
+
+        it "should parse nested expressions" $ do
+          parseValue "(+ 1 (- 3 2))" `shouldBe` Right (LFunction "+" [LInteger 1, LFunction "-" [LInteger 3, LInteger 2]])
+
+        it "should parse with any whitespace" $ do
+          parseValue "(+    1 (  \n  - 3  \t  2))" `shouldBe` Right (LFunction "+" [LInteger 1, LFunction "-" [LInteger 3, LInteger 2]])
