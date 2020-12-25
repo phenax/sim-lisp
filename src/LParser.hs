@@ -26,7 +26,7 @@ instance Show Expression where
   show (LFunction op lst) = "(" ++ op ++ " " ++ (unwords . map show $ lst) ++ ")"
 
 whitespace :: Parsec String u String
-whitespace = many $ oneOf " \n\t"
+whitespace = many $ oneOf [' ', '\n', '\t']
 
 numberP :: Parsec String u Expression
 numberP = LInteger . (\x -> read x :: Integer) <$> many1 digit
@@ -59,4 +59,10 @@ expressionP = do
   whitespace
   return content
 
-tokenize = parse expressionP "LithParserError"
+multipleExpressionsP = do
+  whitespace
+  exprs <- expressionP `sepBy` whitespace
+  whitespace
+  return exprs
+
+tokenize = parse multipleExpressionsP "LithParserError"

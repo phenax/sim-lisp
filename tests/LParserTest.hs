@@ -5,7 +5,7 @@ import Test.Hspec
 import Text.Parsec
 
 valueParsers = do
-  let parseValue = parse stringP "LithParserError"
+  let parseValue = parse stringP "Str"
    in describe "stringP" $ do
         it "should parse simple string" $ do
           parseValue "\"hello world\"" `shouldBe` Right (LString "hello world")
@@ -21,7 +21,7 @@ valueParsers = do
             Right _ -> False
             Left _ -> True
 
-  let parseValue = parse numberP "LithParserError"
+  let parseValue = parse numberP "Num"
    in describe "numberP" $ do
         it "should parse number" $ do
           parseValue "9182323" `shouldBe` Right (LInteger 9182323)
@@ -30,8 +30,11 @@ valueParsers = do
           parseValue "918a2323" `shouldBe` Right (LInteger 918)
 
 expressionParsers = do
-  let parseValue = parse expressionP "LithParserError"
+  let parseValue = parse expressionP "Expr"
    in describe "expressionP - function call" $ do
+        --it "should parse function call with one argument" $ do
+        --parseValue "1" `shouldBe` Right (LInteger 1)
+
         it "should parse function call with one argument" $ do
           parseValue "(+ 1)" `shouldBe` Right (LFunction "+" [LInteger 1])
 
@@ -43,3 +46,12 @@ expressionParsers = do
 
         it "should parse with any whitespace" $ do
           parseValue "(+    1 (  \n  - 3  \t  2))" `shouldBe` Right (LFunction "+" [LInteger 1, LFunction "-" [LInteger 3, LInteger 2]])
+
+  let parseValue = parse multipleExpressionsP "MultipleExpr"
+   in describe "multipleExpressionsP" $ do
+        it "should parse multiple expressions" $ do
+          parseValue "(+ 1 (- 3 2)) (+ 3 (* 9 6))"
+            `shouldBe` Right
+              [ LFunction "+" [LInteger 1, LFunction "-" [LInteger 3, LInteger 2]],
+                LFunction "+" [LInteger 3, LFunction "*" [LInteger 9, LInteger 6]]
+              ]
