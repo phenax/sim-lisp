@@ -9,21 +9,23 @@ import Text.Parsec
 data Expression
   = LInteger Integer
   | LString String
+  | Symbol String
   | LList [Expression]
-  | LFunction String [Expression]
+  | SExpression String [Expression]
 
 instance Eq Expression where
   (==) (LInteger a) (LInteger b) = a == b
   (==) (LString a) (LString b) = a == b
   (==) (LList a) (LList b) = a == b
-  (==) (LFunction a1 b1) (LFunction a2 b2) = a1 == a2 && b1 == b2
+  (==) (SExpression a1 b1) (SExpression a2 b2) = a1 == a2 && b1 == b2
   (==) _ _ = False
 
 instance Show Expression where
   show (LInteger n) = show n
   show (LString s) = "\"" ++ s ++ "\""
+  show (Symbol s) = "(symbol) " ++ s
   show (LList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
-  show (LFunction op lst) = "(" ++ op ++ " " ++ (unwords . map show $ lst) ++ ")"
+  show (SExpression op lst) = "(" ++ op ++ " " ++ (unwords . map show $ lst) ++ ")"
 
 whitespace :: Parsec String u String
 whitespace = many $ oneOf [' ', '\n', '\t']
@@ -48,28 +50,34 @@ listP = do
   char '\''
   char '('
   whitespace
-  exprs <- (functionP <|> valueP) `sepBy` whitespace
+  exprs <- (sExpressionP <|> valueP) `sepBy` whitespace
   whitespace
   return $ LList exprs
 
+getSymbol :: Parsec String u String
+getSymbol = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
+
+symbolP :: Parsec String u Expression
+symbolP = fmap Symbol getSymbol
+
 valueP :: Parsec String u Expression
-valueP = withWhitespace $ (numberP <|> stringP <|> listP <?> "wtf value is this dude?")
+valueP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "wtf value is this dude?")
 
-symbolP :: Parsec String u String
-symbolP = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
-
-functionP = withWhitespace $ do
+sExpressionP = withWhitespace $ do
   char '('
   whitespace
-  op <- symbolP
+  op <- getSymbol
   whitespace
-  arg <- (functionP <|> valueP) `sepBy` whitespace
+  arg <- (valueP <|> sExpressionP) `sepBy` whitespace
   whitespace
   char ')'
-  return $ LFunction op arg
+  return $ SExpression op arg
 
-expressionP = withWhitespace $ functionP <|> valueP
+expressionP = withWhitespace $ sExpressionP <|> valueP
 
 multipleExpressionsP = withWhitespace $ expressionP `sepBy` whitespace
 
 tokenize = parse multipleExpressionsP "LithParserError"
+
+--
+--
