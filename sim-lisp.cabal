@@ -14,22 +14,28 @@ maintainer:          phenax5@gmail.com
 -- category:
 build-type:          Simple
 
-library
+common lib
   hs-source-dirs: src
-  exposed-modules:
-    LParser
   build-depends:
     parsec,
+    hspec,
     base >=4.14 && <4.15
   default-language:    Haskell2010
 
+Test-Suite testis-cool
+  import: lib
+  type:       exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is:    _main.hs
+
+library
+  import: lib
+  exposed-modules:
+    LParser
+
 executable lithp-run
-  hs-source-dirs: src
+  import: lib
   main-is: Main.hs
-  build-depends:
-    parsec,
-    base >=4.14 && <4.15
-  default-language:    Haskell2010
   --other-modules:
     --LithParser
   -- other-extensions:

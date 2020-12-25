@@ -11,6 +11,11 @@ data Expression
   | LString String
   | LFunction ([Expression] -> Expression)
 
+instance Eq Expression where
+  (==) (LInteger a) (LInteger b) = a == b
+  (==) (LString a) (LString b) = a == b
+  (==) _ _ = False
+
 instance Show Expression where
   show (LInteger n) = show n
   show (LString s) = "\"" ++ s ++ "\""
