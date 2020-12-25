@@ -27,13 +27,14 @@ Test-Suite testis-cool
   type:       exitcode-stdio-1.0
   hs-source-dirs: tests
   main-is:    _main.hs
+  default: false
 
 library
   import: lib
   exposed-modules:
     LParser
 
-executable lithp-run
+executable cli
   import: lib
   main-is: Main.hs
   --other-modules:

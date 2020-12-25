@@ -9,16 +9,24 @@ import Text.Parsec
 data Expression
   = LInteger Integer
   | LString String
-  | LFunction ([Expression] -> Expression)
+  | LList [Expression]
+  | LFunction String [Expression]
 
 instance Eq Expression where
   (==) (LInteger a) (LInteger b) = a == b
   (==) (LString a) (LString b) = a == b
+  (==) (LList a) (LList b) = a == b
+  (==) (LFunction a1 b1) (LFunction a2 b2) = a1 == a2 && b1 == b2
   (==) _ _ = False
 
 instance Show Expression where
   show (LInteger n) = show n
   show (LString s) = "\"" ++ s ++ "\""
+  show (LList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
+  show (LFunction op lst) = "(" ++ op ++ " " ++ show (LList lst) ++ ")"
+
+whitespace :: Parsec String u String
+whitespace = many $ oneOf " \n\t"
 
 numberP :: Parsec String u Expression
 numberP = LInteger . (\x -> read x :: Integer) <$> many1 digit
@@ -28,18 +36,24 @@ stringP = do
   char '"'
   LString <$> anyChar `manyTill` char '"'
 
-variableName :: Parsec String u String
-variableName = do
-  many1 $ letter <|> char '\''
+valueP :: Parsec String u Expression
+valueP = numberP <|> stringP <?> "wtf value is this dude?"
 
---functionParser
+variableNameP :: Parsec String u String
+variableNameP = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
 
-valueParser = do
-  spaces
-  content <-
-    stringP
-      <|> numberP
-  spaces
+functionP = do
+  char '('
+  op <- variableNameP
+  whitespace
+  arg <- (functionP <|> valueP) `sepBy` char ' '
+  char ')'
+  return $ LFunction op arg
+
+expressionP = do
+  whitespace
+  content <- functionP <|> valueP
+  whitespace
   return content
 
-tokenize = parse valueParser "LithParserError"
+tokenize = parse expressionP "LithParserError"
