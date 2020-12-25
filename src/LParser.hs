@@ -1,10 +1,7 @@
 module LParser where
 
+import Errors
 import Text.Parsec
-
---import Text.Parsec.Char (anyChar, char, digit, noneOf, spaces, string)
---import Text.Parsec.Combinator (many1, manyTill)
---import Text.Parsec.String (Parser)
 
 data Expression
   = LInteger Integer
@@ -12,14 +9,7 @@ data Expression
   | Symbol String
   | LList [Expression]
   | SExpression Expression [Expression] -- Find way to use Symbol inside SExpression
-
-instance Eq Expression where
-  (==) (LInteger a) (LInteger b) = a == b
-  (==) (LString a) (LString b) = a == b
-  (==) (Symbol a) (Symbol b) = a == b
-  (==) (LList a) (LList b) = a == b
-  (==) (SExpression a1 b1) (SExpression a2 b2) = a1 == a2 && b1 == b2
-  (==) _ _ = False
+  deriving (Eq)
 
 instance Show Expression where
   show (LInteger n) = show n
@@ -75,12 +65,7 @@ expressionP = withWhitespace $ sExpressionP <|> valueP
 
 multipleExpressionsP = withWhitespace $ expressionP `sepBy` whitespace
 
-tokenize = parse multipleExpressionsP "LithParserError"
-
-evaluate = print
-
-interpret :: String -> IO ()
-interpret = evaluate . tokenize
+tokenize = withParseErr . parse multipleExpressionsP "LithParserError"
 
 --
 --

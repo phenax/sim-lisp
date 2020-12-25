@@ -72,8 +72,8 @@ expressionParsers = do
   let parseValue = parse multipleExpressionsP "MultipleExpr"
    in describe "multipleExpressionsP" $ do
         it "should parse multiple expressions" $ do
-          parseValue "(+ 1 (- 3 2)) (+ 3 (* 9 6))"
+          parseValue "(+ 1 (- 3 2)) (+ 3 (* 9 6) 5)"
             `shouldBe` Right
               [ SExpression (Symbol "+") [LInteger 1, SExpression (Symbol "-") [LInteger 3, LInteger 2]],
-                SExpression (Symbol "+") [LInteger 3, SExpression (Symbol "*") [LInteger 9, LInteger 6]]
+                SExpression (Symbol "+") [LInteger 3, SExpression (Symbol "*") [LInteger 9, LInteger 6], LInteger 5]
               ]

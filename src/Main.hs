@@ -1,6 +1,6 @@
 module Main where
 
-import LParser (interpret)
+import Eval (interpret)
 import System.Environment
 import System.IO
 
