@@ -29,6 +29,22 @@ valueParsers = do
         it "should get number till non digit character" $ do
           parseValue "918a2323" `shouldBe` Right (LInteger 918)
 
+  let parseValue = parse listP "List"
+   in describe "listP" $ do
+        it "should parse simple list" $ do
+          parseValue "'( 1 2 4 6 \"abc\" )" `shouldBe` Right (LList [LInteger 1, LInteger 2, LInteger 4, LInteger 6, LString "abc"])
+
+        it "should parse list of expressions" $ do
+          parseValue "'( 1 (+ 5 2) 4 (/ 12 6) )"
+            `shouldBe` Right
+              ( LList
+                  [ LInteger 1,
+                    LFunction "+" [LInteger 5, LInteger 2],
+                    LInteger 4,
+                    LFunction "/" [LInteger 12, LInteger 6]
+                  ]
+              )
+
 expressionParsers = do
   let parseValue = parse expressionP "Expr"
    in describe "expressionP" $ do

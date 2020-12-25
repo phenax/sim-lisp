@@ -43,16 +43,25 @@ stringP = do
   char '"'
   LString <$> anyChar `manyTill` char '"'
 
-valueP :: Parsec String u Expression
-valueP = numberP <|> stringP <?> "wtf value is this dude?"
+listP :: Parsec String u Expression
+listP = do
+  char '\''
+  char '('
+  whitespace
+  exprs <- (functionP <|> valueP) `sepBy` whitespace
+  whitespace
+  return $ LList exprs
 
-variableNameP :: Parsec String u String
-variableNameP = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
+valueP :: Parsec String u Expression
+valueP = withWhitespace $ (numberP <|> stringP <|> listP <?> "wtf value is this dude?")
+
+symbolP :: Parsec String u String
+symbolP = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'']
 
 functionP = withWhitespace $ do
   char '('
   whitespace
-  op <- variableNameP
+  op <- symbolP
   whitespace
   arg <- (functionP <|> valueP) `sepBy` whitespace
   whitespace
