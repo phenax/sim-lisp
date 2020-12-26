@@ -12,6 +12,18 @@ data EvalResult
   | EList [EvalResult]
   deriving (Show, Eq)
 
+data ContextType = Global | Macro Expression
+
+data Context = Context
+  { kind :: ContextType,
+    symbols :: [Integer]
+  }
+
+newtype Stack = Stack [Context]
+
+-- evalExpression :: Context -> Expression -> Either Error (EvalResult, Context)
+-- evaluate :: Context -> [Expression] -> Either Error (EvalResult, Context)
+
 mapInt fn = \case
   EInteger x -> EInteger $ fn x
   x -> x
@@ -22,11 +34,11 @@ innerConcat list item = do
   x <- item
   return $ x : ls
 
-evalExpressions :: [Expression] -> Either Error [EvalResult]
-evalExpressions = foldl innerConcat (Right []) . map evalExpression
+evalConcat :: [Expression] -> Either Error [EvalResult]
+evalConcat = foldl innerConcat (Right []) . map evalExpression
 
 foldInts :: (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error EvalResult
-foldInts fn init = folder <=< evalExpressions
+foldInts fn init = folder <=< evalConcat
   where
     folder :: [EvalResult] -> Either Error EvalResult
     folder = \case
@@ -37,20 +49,24 @@ foldInts fn init = folder <=< evalExpressions
 
 evalExpression :: Expression -> Either Error EvalResult
 evalExpression = \case
-  (LInteger n) -> Right $ EInteger n
-  (LString s) -> Right $ EString s
-  (Symbol s) -> Right $ EString s -- TODO: Read variable value
-  --(LList []) -> Right $ EList []
-  --(LList exprs) -> map (fmap EList . evalExpression) $ exprs
-  (SExpression op lst) -> case op of
+  Atom atom -> case atom of
+    AtomInt n -> Right $ EInteger n
+    AtomString s -> Right $ EString s
+    _ -> Left $ EvalError "TODO: Not impl"
+  SymbolExpression op lst -> case op of
     Symbol "+" -> foldInts (+) 0 lst
     Symbol "-" -> foldInts (-) 0 lst
     Symbol "*" -> foldInts (*) 1 lst
     Symbol "/" -> foldInts div 1 lst
     Symbol fn -> Left $ EvalError $ "TODO: Not impl (" ++ fn ++ ")"
-  _ -> Left $ EvalError "TODO: Not impl"
 
-evaluate = print
+evaluate :: [Expression] -> [Either Error EvalResult]
+evaluate = map evalExpression
 
 interpret :: String -> IO ()
-interpret = evaluate . tokenize
+interpret = print . fmap evaluate . tokenize
+
+--
+--
+--
+--

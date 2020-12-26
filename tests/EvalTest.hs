@@ -32,3 +32,8 @@ evalExpressionTests = do
         it "should emit eval error for invalid types" $ do
           eval "(+ 10 \"fucking hell\" 5)" `shouldBe` Left (EvalError "Invalid set of params")
           eval "(+ 10 (+ 12 \"1\"))" `shouldBe` Left (EvalError "Invalid set of params")
+
+        describe "with symbols" $ do
+          it "should do stuff" $ do
+            eval "(set a 5) (+ 10 a)" `shouldBe` Left (EvalError "Invalid set of params")
+            eval "(set a 5) (set b 10) (* a b))" `shouldBe` Left (EvalError "Invalid set of params")
