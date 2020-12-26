@@ -8,7 +8,7 @@ import Test.Hspec
 import Text.Parsec
 
 evalExpressionTests = do
-  let eval = evalExpression <=< (withParseErr . parse expressionP "Expr")
+  let eval = evalExpression emptyScope <=< (withParseErr . parse expressionP "Expr")
    in describe "evalExpression" $ do
         it "should be identity for single args" $ do
           eval "(+ 5)" `shouldBe` Right (EInteger 5)
@@ -33,7 +33,10 @@ evalExpressionTests = do
           eval "(+ 10 \"fucking hell\" 5)" `shouldBe` Left (EvalError "Invalid set of params")
           eval "(+ 10 (+ 12 \"1\"))" `shouldBe` Left (EvalError "Invalid set of params")
 
-        describe "with symbols" $ do
-          it "should do stuff" $ do
-            eval "(set a 5) (+ 10 a)" `shouldBe` Left (EvalError "Invalid set of params")
-            eval "(set a 5) (set b 10) (* a b))" `shouldBe` Left (EvalError "Invalid set of params")
+        describe "let" $ do
+          xit "should do stuff" $ do
+            eval "(let ((x 5) (y 6)) (+ x (* y 2)))" `shouldBe` Left (EvalError "Invalid set of params")
+
+        describe "lambda" $ do
+          xit "should do stuff" $ do
+            eval "(lambda (x) (+ x 1))" `shouldBe` Left (EvalError "Invalid set of params")

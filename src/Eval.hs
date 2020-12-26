@@ -3,6 +3,7 @@
 module Eval where
 
 import Control.Monad
+import qualified Data.Map as Map
 import Errors
 import LParser
 
@@ -12,17 +13,11 @@ data EvalResult
   | EList [EvalResult]
   deriving (Show, Eq)
 
-data ContextType = Global | Macro Expression
+type Context = Map.Map String Atom
 
-data Context = Context
-  { kind :: ContextType,
-    symbols :: [Integer]
-  }
+newtype Scope = Scope Context
 
-newtype Stack = Stack [Context]
-
--- evalExpression :: Context -> Expression -> Either Error (EvalResult, Context)
--- evaluate :: Context -> [Expression] -> Either Error (EvalResult, Context)
+emptyScope = Scope Map.empty
 
 mapInt fn = \case
   EInteger x -> EInteger $ fn x
@@ -34,11 +29,11 @@ innerConcat list item = do
   x <- item
   return $ x : ls
 
-evalConcat :: [Expression] -> Either Error [EvalResult]
-evalConcat = foldl innerConcat (Right []) . map evalExpression
+evalConcat :: Scope -> [Expression] -> Either Error [EvalResult]
+evalConcat scope = foldl innerConcat (Right []) . map (evalExpression scope)
 
-foldInts :: (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error EvalResult
-foldInts fn init = folder <=< evalConcat
+foldInts :: Scope -> (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error EvalResult
+foldInts scope fn init = folder <=< evalConcat scope
   where
     folder :: [EvalResult] -> Either Error EvalResult
     folder = \case
@@ -47,21 +42,23 @@ foldInts fn init = folder <=< evalConcat
       ((EInteger a) : tail) -> mapInt (`fn` a) <$> folder tail
       _ -> Left $ EvalError "Invalid set of params"
 
-evalExpression :: Expression -> Either Error EvalResult
-evalExpression = \case
+evalExpression :: Scope -> Expression -> Either Error EvalResult
+evalExpression scope = \case
   Atom atom -> case atom of
     AtomInt n -> Right $ EInteger n
     AtomString s -> Right $ EString s
-    _ -> Left $ EvalError "TODO: Not impl"
-  SymbolExpression op lst -> case op of
-    Symbol "+" -> foldInts (+) 0 lst
-    Symbol "-" -> foldInts (-) 0 lst
-    Symbol "*" -> foldInts (*) 1 lst
-    Symbol "/" -> foldInts div 1 lst
-    Symbol fn -> Left $ EvalError $ "TODO: Not impl (" ++ fn ++ ")"
+    _ -> Left $ EvalError "TODO: Atom not implemented"
+  SymbolExpression (Atom (AtomSymbol op) : lst) -> case op of
+    "+" -> foldInts scope (+) 0 lst
+    "-" -> foldInts scope (-) 0 lst
+    "*" -> foldInts scope (*) 1 lst
+    "/" -> foldInts scope div 1 lst
+    --Symbol "let" ->
+    fn -> Left $ EvalError $ "TODO: Macro not implemented (" ++ fn ++ ")"
+  _ -> Left $ EvalError "TODO: Not impl out"
 
 evaluate :: [Expression] -> [Either Error EvalResult]
-evaluate = map evalExpression
+evaluate = map (evalExpression emptyScope)
 
 interpret :: String -> IO ()
 interpret = print . fmap evaluate . tokenize

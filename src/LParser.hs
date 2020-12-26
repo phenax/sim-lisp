@@ -3,27 +3,25 @@ module LParser where
 import Errors
 import Text.Parsec
 
-newtype Symbol = Symbol String deriving (Show, Eq)
-
 data Atom
   = AtomString String
   | AtomInt Integer
   | AtomBool Bool
   | AtomList [Expression]
-  | AtomSymbol Symbol
+  | AtomSymbol String
   deriving (Show, Eq)
 
 data Expression
   = Atom Atom
-  | SymbolExpression Symbol [Expression]
+  | SymbolExpression [Expression]
   deriving (Eq)
 
 instance Show Expression where
   show (Atom (AtomInt n)) = show n
   show (Atom (AtomString s)) = "\"" ++ s ++ "\""
   show (Atom (AtomList exprs)) = "(" ++ (unwords . map show $ exprs) ++ ")"
-  show (Atom (AtomSymbol (Symbol s))) = s
-  show (SymbolExpression op lst) = "(" ++ show op ++ " " ++ (unwords . map show $ lst) ++ ")"
+  show (Atom (AtomSymbol s)) = s
+  show (SymbolExpression lst) = "(" ++ (unwords . map show $ lst) ++ ")"
 
 whitespace :: Parsec String u String
 whitespace = many $ oneOf [' ', '\n', '\t']
@@ -56,7 +54,7 @@ parseSymbolString :: Parsec String u String
 parseSymbolString = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'', '<', '>', '=', '!', '%', '&', '.', ':', '?', '@', '$', '^']
 
 symbolP :: Parsec String u Expression
-symbolP = Atom . AtomSymbol . Symbol <$> parseSymbolString
+symbolP = Atom . AtomSymbol <$> parseSymbolString
 
 atomP :: Parsec String u Expression
 atomP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "wtf value is this dude?")
@@ -64,12 +62,10 @@ atomP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "wtf value
 sExpressionP = withWhitespace $ do
   char '('
   whitespace
-  op <- parseSymbolString
-  whitespace
   arg <- (atomP <|> sExpressionP) `sepBy` whitespace
   whitespace
   char ')'
-  return $ SymbolExpression (Symbol op) arg
+  return $ SymbolExpression arg
 
 expressionP = withWhitespace $ sExpressionP <|> atomP
 
