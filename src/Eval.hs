@@ -7,20 +7,14 @@ import qualified Data.Map as Map
 import Errors
 import LParser
 
-data EvalResult
-  = EString String
-  | EInteger Integer
-  | EList [EvalResult]
-  deriving (Show, Eq)
+type Scope = Map.Map String Atom
 
-type Context = Map.Map String Atom
+emptyScope = Map.empty
 
-newtype Scope = Scope Context
-
-emptyScope = Scope Map.empty
+mapSnd fn (a, b) = (a, fn b)
 
 mapInt fn = \case
-  EInteger x -> EInteger $ fn x
+  AtomInt x -> AtomInt $ fn x
   x -> x
 
 innerConcat :: Either e [a] -> Either e a -> Either e [a]
@@ -29,35 +23,64 @@ innerConcat list item = do
   x <- item
   return $ x : ls
 
-evalConcat :: Scope -> [Expression] -> Either Error [EvalResult]
-evalConcat scope = foldl innerConcat (Right []) . map (evalExpression scope)
+-- TODO: Refactor both to use an innerConcatBy
+innerConcatPair :: Either e [(a, b)] -> (a, Either e b) -> Either e [(a, b)]
+innerConcatPair list item = do
+  ls <- list
+  x <- snd item
+  return $ (fst item, x) : ls
 
-foldInts :: Scope -> (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error EvalResult
+mergeM :: [Either e a] -> Either e [a]
+mergeM = foldl innerConcat (Right [])
+
+evalConcat :: Scope -> [Expression] -> Either Error [Atom]
+evalConcat scope = mergeM . map (evalExpression scope)
+
+foldInts :: Scope -> (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error Atom
 foldInts scope fn init = folder <=< evalConcat scope
   where
-    folder :: [EvalResult] -> Either Error EvalResult
+    folder :: [Atom] -> Either Error Atom
     folder = \case
-      [] -> Right $ EInteger init
-      [EInteger a] -> Right $ EInteger a
-      ((EInteger a) : tail) -> mapInt (`fn` a) <$> folder tail
+      [] -> Right $ AtomInt init
+      [AtomInt a] -> Right $ AtomInt a
+      ((AtomInt a) : tail) -> mapInt (`fn` a) <$> folder tail
       _ -> Left $ EvalError "Invalid set of params"
 
-evalExpression :: Scope -> Expression -> Either Error EvalResult
+letPair :: Expression -> Either Error (String, Expression)
+letPair = \case
+  SymbolExpression [Atom (AtomSymbol s), expr] -> Right (s, expr)
+  _ -> Left $ EvalError "Invalid let binding"
+
+flattenPairBySnd :: [(k, Either e a)] -> Either e [(k, a)]
+flattenPairBySnd = foldl innerConcatPair (Right [])
+
+evalExpression :: Scope -> Expression -> Either Error Atom
 evalExpression scope = \case
   Atom atom -> case atom of
-    AtomInt n -> Right $ EInteger n
-    AtomString s -> Right $ EString s
+    AtomInt n -> Right $ AtomInt n
+    AtomString s -> Right $ AtomString s
+    AtomSymbol k -> case Map.lookup k scope of
+      Just value -> Right value
+      Nothing -> Left $ EvalError "Variable not found"
     _ -> Left $ EvalError "TODO: Atom not implemented"
   SymbolExpression (Atom (AtomSymbol op) : lst) -> case op of
     "+" -> foldInts scope (+) 0 lst
     "-" -> foldInts scope (-) 0 lst
     "*" -> foldInts scope (*) 1 lst
     "/" -> foldInts scope div 1 lst
-    --Symbol "let" ->
+    "let" -> case lst of
+      [SymbolExpression params, SymbolExpression body] -> do
+        -- Evaluate params
+        paramMap <- (fmap Map.fromList . flattenPairBySnd) <=< (mergeM . map (fmap (mapSnd (evalExpression scope)) . letPair)) $ params
+        -- Inject params into scope
+        -- Evaluate body with newScope
+        let newScope = paramMap `Map.union` scope
+         in evalExpression newScope $ SymbolExpression body
+      _ -> Left $ EvalError "Invalid `let` expression"
     fn -> Left $ EvalError $ "TODO: Macro not implemented (" ++ fn ++ ")"
   _ -> Left $ EvalError "TODO: Not impl out"
 
-evaluate :: [Expression] -> [Either Error EvalResult]
+evaluate :: [Expression] -> [Either Error Atom]
 evaluate = map (evalExpression emptyScope)
 
 interpret :: String -> IO ()
