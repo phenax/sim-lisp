@@ -2,7 +2,8 @@ module Errors where
 
 import Text.Parsec
 
-data EvalError
+-- TODO: Better error handling
+data Error
   = EvalError String
   | ParserError ParseError
   deriving (Show, Eq)

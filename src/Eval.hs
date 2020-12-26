@@ -1,5 +1,8 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Eval where
 
+import Control.Monad
 import Errors
 import LParser
 
@@ -9,28 +12,41 @@ data EvalResult
   | EList [EvalResult]
   deriving (Show, Eq)
 
-runIntOp2 fn lst = case map evalExpression lst of
-  [Right (EInteger n)] -> Right $ EInteger n
-  [Right (EInteger a), Right (EInteger b)] -> Right $ fn a b
-  _ -> Left $ EvalError "TODO: Not impl"
+mapInt fn = \case
+  EInteger x -> EInteger $ fn x
+  x -> x
 
---runIntOp fn lst = case map evalExpression lst of
---[Right (EInteger n)] -> Right $ EInteger n
---(Right (EInteger n):ls) -> Right $ EInteger $ foldl (\acc -> fmap (\x -> acc)) (Right (EInteger n)) ls
---_ -> Left "TODO: Not impl"
+innerConcat :: Either e [a] -> Either e a -> Either e [a]
+innerConcat list item = do
+  ls <- list
+  x <- item
+  return $ x : ls
 
-evalExpression :: Expression -> Either EvalError EvalResult
-evalExpression expr = case expr of
+evalExpressions :: [Expression] -> Either Error [EvalResult]
+evalExpressions = foldl innerConcat (Right []) . map evalExpression
+
+foldInts :: (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error EvalResult
+foldInts fn init = folder <=< evalExpressions
+  where
+    folder :: [EvalResult] -> Either Error EvalResult
+    folder = \case
+      [] -> Right $ EInteger init
+      [EInteger a] -> Right $ EInteger a
+      ((EInteger a) : tail) -> mapInt (`fn` a) <$> folder tail
+      _ -> Left $ EvalError "Invalid set of params"
+
+evalExpression :: Expression -> Either Error EvalResult
+evalExpression = \case
   (LInteger n) -> Right $ EInteger n
   (LString s) -> Right $ EString s
   (Symbol s) -> Right $ EString s -- TODO: Read variable value
   --(LList []) -> Right $ EList []
   --(LList exprs) -> map (fmap EList . evalExpression) $ exprs
   (SExpression op lst) -> case op of
-    Symbol "+" -> runIntOp2 (\a -> EInteger . (+ a)) lst
-    Symbol "-" -> runIntOp2 (\a -> EInteger . (-) a) lst
-    Symbol "*" -> runIntOp2 (\a -> EInteger . (* a)) lst
-    Symbol "/" -> runIntOp2 (\a -> EInteger . div a) lst
+    Symbol "+" -> foldInts (+) 0 lst
+    Symbol "-" -> foldInts (-) 0 lst
+    Symbol "*" -> foldInts (*) 1 lst
+    Symbol "/" -> foldInts div 1 lst
     Symbol fn -> Left $ EvalError $ "TODO: Not impl (" ++ fn ++ ")"
   _ -> Left $ EvalError "TODO: Not impl"
 
