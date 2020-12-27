@@ -7,6 +7,8 @@ module Eval where
 
 import Atom
 import Control.Monad
+import qualified Data.ByteString.Char8 as BChar8
+import Data.FileEmbed
 import qualified Data.Map as Map
 import Errors
 import LParser
@@ -131,14 +133,14 @@ evaluateWithScope scope = evalExpression scope . SymbolExpression . makeDo
   where
     makeDo = (Atom (AtomSymbol "do") :)
 
+stdlibContent :: [String]
+stdlibContent = map BChar8.unpack [$(embedFile "./src/stdlib/core.sim")]
+
 loadLibrarysIntoScope :: Scope -> Either Error Scope
 loadLibrarysIntoScope scope = snd <$> (libraryAst >>= evaluateWithScope scope)
   where
     libraryAst =
-      tokenize
-        [r|
-      (declare stdlib-loaded? T)
-      |]
+      tokenize $ unwords stdlibContent
 
 evaluate :: [Expression] -> Either Error Atom
 evaluate exprs = do

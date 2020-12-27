@@ -5,8 +5,9 @@
   - [X] `lambda` - Define lambda
   - [X] Fix numbers in variable names issue
   - [X] Bool
-  - [ ] Boolean helpers (`cond`)
   - [ ] Standard library
+  - [ ] Fix repl to maintain global scope
+  - [ ] Boolean helpers (`cond`)
   - [ ] `import` - Import module
   - [ ] `def` - Define macros
   - [ ] `quote` - Symbols?
