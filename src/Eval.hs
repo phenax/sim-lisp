@@ -10,6 +10,7 @@ import Control.Monad
 import qualified Data.ByteString.Char8 as BChar8
 import Data.FileEmbed
 import qualified Data.Map as Map
+import Debug.Trace
 import Errors
 import LParser
 import Text.RawString.QQ
@@ -77,7 +78,7 @@ customMacroE fn scope = \case
     let lambda = case Map.lookup fn scope of
           Just (AtomLambda params body) -> Right (params, body)
           _ -> Left $ EvalError ("Invalid call. `" ++ fn ++ "` is not a macro")
-        toScope params = (scope `Map.union`) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
+        toScope params = (`Map.union` scope) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
      in do
           (params, body) <- lambda
           newScope <- toScope params
@@ -88,6 +89,18 @@ importE :: MacroEvaluator
 importE scope = \case
   [Atom (AtomString file)] -> Left $ EvalError "TODO: Import impl"
   _ -> Left $ EvalError "Invalid import expression"
+
+ifE :: MacroEvaluator
+ifE scope = \case
+  [exp1, thenBody, elseBody] ->
+    let isTruthy = \case
+          AtomBool x -> x
+          _ -> True
+     in do
+          condAtom <- evalExpressionPure scope exp1
+          result <- evalExpressionPure scope (if isTruthy condAtom then thenBody else elseBody)
+          return (result, scope)
+  _ -> Left $ EvalError "Invalid number of arguments"
 
 compare2E :: [Ordering] -> MacroEvaluator
 compare2E ordering scope = \case
@@ -121,6 +134,7 @@ evalExpression scope = \case
     ">" -> compare2E [GT] scope lst
     ">=" -> compare2E [GT, EQ] scope lst
     "lambda" -> lambdaE scope lst
+    "if" -> ifE scope lst
     "do" -> doblockE scope lst
     "declare" -> declareE scope lst
     "let" -> letbindingE scope lst

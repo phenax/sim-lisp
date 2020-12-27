@@ -5,14 +5,15 @@
   - [X] `lambda` - Define lambda
   - [X] Fix numbers in variable names issue
   - [X] Bool
-  - [ ] Standard library
+  - [X] Loading stdlib
+  - [X] Fix scope issue for lambda
   - [ ] Fix repl to maintain global scope
   - [ ] Boolean helpers (`cond`)
   - [ ] `import` - Import module
   - [ ] `def` - Define macros
   - [ ] `quote` - Symbols?
-  - [ ] String ops
+  - [ ] core stdlib
   - [ ] List
-  - [ ] Call stack
-  - [ ] Standard library
-  - [ ] def
+  - [ ] list stdlib
+  - [ ] String
+  - [ ] string stdlib

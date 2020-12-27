@@ -112,9 +112,37 @@ evalExpressionTests = do
           it "should allow shadowing let values" $ do
             eval "(let ((x 5)) (let ((x 2)) x))" `shouldBe` Right (AtomInt 2)
 
+        describe "if" $ do
+          it "should run the then body in true" $ do
+            eval "(if T 1 0)" `shouldBe` Right (AtomInt 1)
+          it "should run the else body in false" $ do
+            eval "(if F 1 0)" `shouldBe` Right (AtomInt 0)
+          it "should evaluate expressions that return values" $ do
+            eval "(declare x 2) (if (< x 1) 1 (- 1 1))" `shouldBe` Right (AtomInt 0)
+            eval "(declare x 2) (if (= x 2) (- 5 2) (+ 20 5))" `shouldBe` Right (AtomInt 3)
+
         describe "lambda" $ do
           it "should save lambda in scope and call it" $ do
             eval "(let ((incr (lambda (x) (+ x 1)))) (incr 5) )" `shouldBe` Right (AtomInt 6)
+          it "should do factorial" $ do
+            eval
+              [r|(declare fact (lambda (x) (
+                  if (<= x 2)
+                    x
+                    (* x (fact (- x 1)))
+                )))
+
+               (fact 5)
+              )"|]
+              `shouldBe` Right (AtomInt 120)
+          it "should create a lambda atom" $ do
+            eval "(lambda (x) (+ x 1))"
+              `shouldBe` Right
+                ( AtomLambda
+                    ["x"]
+                    ( SymbolExpression [Atom (AtomSymbol "+"), Atom (AtomSymbol "x"), Atom (AtomInt 1)]
+                    )
+                )
           it "should multiple lambdas" $ do
             eval
               [r|(let (
@@ -123,6 +151,13 @@ evalExpressionTests = do
               ) (incr (mul 3)))
               )"|]
               `shouldBe` Right (AtomInt 16)
+          it "should shadow any variables outside scope" $ do
+            eval
+              [r|(declare x 100)
+                (declare incr (lambda (x) (+ x 1)))
+                (incr 10)
+              )"|]
+              `shouldBe` Right (AtomInt 11)
           it "should create a lambda atom" $ do
             eval "(lambda (x) (+ x 1))"
               `shouldBe` Right

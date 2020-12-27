@@ -1,4 +1,1 @@
 (declare stdlib-loaded? T)
-(declare fuck 1)
-(declare foo 2)
-(declare bar 3)

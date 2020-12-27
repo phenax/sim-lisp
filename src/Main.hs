@@ -24,6 +24,6 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [] -> repl
+    [] -> interpretFile "./examples/fibo.scm"
     ["repl"] -> repl
     (file : _) -> interpretFile file
