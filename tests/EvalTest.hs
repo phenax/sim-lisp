@@ -11,7 +11,7 @@ import Text.Parsec
 import Text.RawString.QQ
 
 evalExpressionTests = do
-  let eval = evalExpression emptyScope <=< (withParseErr . parse expressionP "Expr")
+  let eval = evalExpressionPure emptyScope <=< (withParseErr . parse expressionP "Expr")
    in describe "evalExpression" $ do
         it "should be identity for single args" $ do
           eval "(+ 5)" `shouldBe` Right (AtomInt 5)
@@ -39,6 +39,8 @@ evalExpressionTests = do
         describe "let" $ do
           it "should provide definied variables inside the scope" $ do
             eval "(let ((x 5) (y 6)) (+ x (* y 2)))" `shouldBe` Right (AtomInt 17)
+          it "should not provide definied variables outside the scope" $ do
+            eval "(* 20 (let ((x 5)) x) x)" `shouldBe` Left (EvalError "Variable x not found in scope")
           it "should allow let inside let definitions" $ do
             eval
               [r|(let (

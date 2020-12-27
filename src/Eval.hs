@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TupleSections #-}
 
 module Eval where
 
@@ -33,17 +34,17 @@ innerConcatPair list item = do
 mergeM :: [Either e a] -> Either e [a]
 mergeM = foldl innerConcat (Right [])
 
-evalConcat :: Scope -> [Expression] -> Either Error [Atom]
+evalConcat :: Scope -> [Expression] -> Either Error [(Atom, Scope)]
 evalConcat scope = mergeM . map (evalExpression scope)
 
-foldInts :: Scope -> (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error Atom
-foldInts scope fn init = folder <=< evalConcat scope
+foldInts :: Scope -> (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error (Atom, Scope)
+foldInts scope fn init = folder scope <=< evalConcat scope
   where
-    folder :: [Atom] -> Either Error Atom
-    folder = \case
-      [] -> Right $ AtomInt init
-      [AtomInt a] -> Right $ AtomInt a
-      ((AtomInt a) : tail) -> mapInt (`fn` a) <$> folder tail
+    folder :: Scope -> [(Atom, Scope)] -> Either Error (Atom, Scope)
+    folder scope = \case
+      [] -> Right (AtomInt init, scope)
+      [(AtomInt a, _)] -> Right (AtomInt a, scope)
+      ((AtomInt a, currentScope) : tail) -> (,scope) . mapInt (`fn` a) . fst <$> folder currentScope tail
       _ -> Left $ EvalError "Invalid set of params"
 
 letPair :: Expression -> Either Error (String, Expression)
@@ -54,13 +55,16 @@ letPair = \case
 flattenPairBySnd :: [(k, Either e a)] -> Either e [(k, a)]
 flattenPairBySnd = foldl innerConcatPair (Right [])
 
-evalExpression :: Scope -> Expression -> Either Error Atom
+evalExpressionPure :: Scope -> Expression -> Either Error Atom
+evalExpressionPure scope = fmap fst . evalExpression scope
+
+evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case
   Atom atom -> case atom of
-    AtomInt n -> Right $ AtomInt n
-    AtomString s -> Right $ AtomString s
+    AtomInt n -> Right (AtomInt n, scope)
+    AtomString s -> Right (AtomString s, scope)
     AtomSymbol k -> case Map.lookup k scope of
-      Just value -> Right value
+      Just value -> Right (value, scope)
       Nothing -> Left $ EvalError $ "Variable " ++ k ++ " not found in scope"
     _ -> Left $ EvalError "TODO: Atom not implemented"
   SymbolExpression (Atom (AtomSymbol op) : lst) -> case op of
@@ -77,7 +81,7 @@ evalExpression scope = \case
     "let" -> case lst of
       [SymbolExpression params, expression] -> do
         -- Evaluate params
-        paramMap <- (fmap Map.fromList . flattenPairBySnd) <=< (mergeM . map (fmap (mapSnd (evalExpression scope)) . letPair)) $ params
+        paramMap <- (fmap (Map.fromList . map (mapSnd fst)) . flattenPairBySnd) <=< (mergeM . map (fmap (mapSnd (evalExpression scope)) . letPair)) $ params
         -- Inject params into scope
         -- Evaluate body with newScope
         let newScope = paramMap `Map.union` scope
@@ -87,7 +91,7 @@ evalExpression scope = \case
   _ -> Left $ EvalError "TODO: Not impl out"
 
 evaluate :: [Expression] -> [Either Error Atom]
-evaluate = map (evalExpression emptyScope)
+evaluate = map (fmap fst . evalExpression emptyScope)
 
 interpret :: String -> IO ()
 interpret = print . fmap evaluate . tokenize
