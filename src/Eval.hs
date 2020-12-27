@@ -104,8 +104,10 @@ evalExpression scope = \case
     fn -> Left $ EvalError $ "TODO: Macro not implemented (" ++ fn ++ ")"
   _ -> Left $ EvalError "TODO: Not impl out"
 
-evaluate :: [Expression] -> [Either Error Atom]
-evaluate = map (fmap fst . evalExpression emptyScope)
+evaluate :: [Expression] -> Either Error Atom
+evaluate = evalExpressionPure emptyScope . SymbolExpression . makeDo
+  where
+    makeDo = (Atom (AtomSymbol "do") :)
 
 interpret :: String -> IO ()
 interpret = print . fmap evaluate . tokenize
