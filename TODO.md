@@ -1,0 +1,16 @@
+## TODO
+  - [X] `declare` - Define global variables
+  - [X] `let` - Define scoped variables
+  - [X] `do` - Block of expressions
+  - [ ] Fix numbers in variable names issue
+  - [ ] `import` - Import module
+  - [ ] `def` - Define macros
+  - [ ] `quote` - Symbols?
+  - [ ] `lambda` - Define lambda
+  - [ ] `constant` - Define constants
+  - [ ] Bool
+  - [ ] String ops
+  - [ ] List
+  - [ ] Call stack
+  - [ ] Standard library
+  - [ ] def

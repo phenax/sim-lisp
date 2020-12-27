@@ -91,11 +91,21 @@ evalExpressionTests = do
             eval "(let ((x 5)) (let ((x 2)) x))" `shouldBe` Right (AtomInt 2)
 
         describe "lambda" $ do
-          it "should do stuff" $ do
+          it "should save lambda in scope and call it" $ do
+            eval "(let ((incr (lambda (x) (+ x 1)))) (incr 5) )" `shouldBe` Right (AtomInt 6)
+          it "should multiple lambdas" $ do
+            eval
+              [r|(let (
+                (mul (lambda (x) (* x 5)))
+                (incr (lambda (x) (+ x 1)))
+              ) (incr (mul 3)))
+            "|]
+              `shouldBe` Right (AtomInt 16)
+          it "should create a lambda atom" $ do
             eval "(lambda (x) (+ x 1))"
               `shouldBe` Right
                 ( AtomLambda
-                    [AtomSymbol "x"]
+                    ["x"]
                     ( SymbolExpression [Atom (AtomSymbol "+"), Atom (AtomSymbol "x"), Atom (AtomInt 1)]
                     )
                 )

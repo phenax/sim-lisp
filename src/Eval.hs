@@ -50,7 +50,7 @@ foldInts scope fn init = folder scope <=< evalConcat scope
 letPair :: Expression -> Either Error (String, Expression)
 letPair = \case
   SymbolExpression [Atom (AtomSymbol s), expr] -> Right (s, expr)
-  _ -> Left $ EvalError "Invalid let binding"
+  _ -> Left $ EvalError "Invalid `let` binding"
 
 flattenPairBySnd :: [(k, Either e a)] -> Either e [(k, a)]
 flattenPairBySnd = foldl innerConcatPair (Right [])
@@ -63,9 +63,9 @@ isSymbol = \case
   Atom (AtomSymbol _) -> True
   _ -> False
 
-toAtom :: Expression -> Maybe Atom
-toAtom = \case
-  Atom a -> Just a
+toSymbolString :: Expression -> Maybe String
+toSymbolString = \case
+  Atom (AtomSymbol s) -> Just s
   _ -> Nothing
 
 toEither :: Maybe a -> Either Error a
@@ -91,11 +91,11 @@ evalExpression scope = \case
     "lambda" -> case lst of
       [SymbolExpression args, body] ->
         if all isSymbol args
-          then (\params -> (AtomLambda params body, scope)) <$> (toEither . mergeM . map toAtom) args
+          then (\params -> (AtomLambda params body, scope)) <$> (toEither . mergeM . map toSymbolString) args
           else Left $ EvalError "Invalid arguments passed to `lambda` expression"
       _ -> Left $ EvalError "Invalid `lambda` expression"
     "do" -> case lst of
-      [] -> Left $ EvalError "`do` block cannot be empty"
+      [] -> Left $ EvalError "Empty `do` block"
       lst -> foldl evaluateExpr (Right (AtomInt 0, scope)) lst
         where
           evaluateExpr = \result expr -> do
@@ -117,7 +117,17 @@ evalExpression scope = \case
         let newScope = paramMap `Map.union` scope
          in evalExpression newScope expression
       _ -> Left $ EvalError "Invalid `let` expression"
-    fn -> Left $ EvalError $ "TODO: Macro not implemented (" ++ fn ++ ")"
+    fn -> case lst of
+      arguments ->
+        let lambda = case Map.lookup fn scope of
+              Just (AtomLambda params body) -> Right (params, body)
+              _ -> Left $ EvalError ("Invalid call. `" ++ fn ++ "` is not a macro")
+            toScope params = (scope `Map.union`) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
+         in do
+              (params, body) <- lambda
+              newScope <- toScope params
+              (result, _) <- evalExpression newScope body
+              return (result, scope)
   _ -> Left $ EvalError "TODO: Not impl out"
 
 evaluate :: [Expression] -> Either Error Atom
