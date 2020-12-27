@@ -4,6 +4,8 @@ module Utils where
 
 import Errors
 
+mapFst fn (a, b) = (fn a, b)
+
 mapSnd fn (a, b) = (a, fn b)
 
 innerConcat :: Monad m => m [a] -> m a -> m [a]

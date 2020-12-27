@@ -50,6 +50,14 @@ evalExpressionTests = do
             eval "(< 5 5)" `shouldBe` Right (AtomBool False)
             eval "(<= 5 5)" `shouldBe` Right (AtomBool True)
             eval "(<= 2 5)" `shouldBe` Right (AtomBool True)
+          it "should compare string correctly" $ do
+            eval [r|(> "hello" "hallo")|] `shouldBe` Right (AtomBool True)
+            eval [r|(> "h" "he")|] `shouldBe` Right (AtomBool False)
+            eval [r|(> "hee" "he")|] `shouldBe` Right (AtomBool True)
+            eval [r|(> "1-1" "1-0")|] `shouldBe` Right (AtomBool True)
+            eval [r|(< "1-0" "1-1")|] `shouldBe` Right (AtomBool True)
+            eval [r|(= "1-1" "1-1")|] `shouldBe` Right (AtomBool True)
+            eval [r|(= "1-0" "1-1")|] `shouldBe` Right (AtomBool False)
 
         describe "do" $ do
           it "should return last expression from block" $ do
