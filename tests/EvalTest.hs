@@ -46,7 +46,18 @@ evalExpressionTests = do
                 (+ 5 6))
             |]
               `shouldBe` Right (AtomInt 11)
-          xit "should evaluate all expressions and return last" $ do
+          it "should return last expression from block" $ do
+            eval
+              [r|
+              (do
+                (declare x 7)
+                (+ 3 3)
+                (+ 5 x))
+            |]
+              `shouldBe` Right (AtomInt 12)
+
+        describe "declare" $ do
+          it "should declare variable in the current scope" $ do
             eval
               [r|
               (do

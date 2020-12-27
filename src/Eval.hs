@@ -86,8 +86,8 @@ evalExpression scope = \case
             (_, lastScope) <- result
             evalExpression lastScope expr
     "declare" -> case lst of
-      [Atom (AtomSymbol s), SymbolExpression expr] ->
-        Left $ EvalError "TODO: impl declare"
+      [Atom (AtomSymbol k), expr] ->
+        (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
       _ -> Left $ EvalError "Invalid `declare` expression"
     "let" -> case lst of
       [SymbolExpression params, expression] -> do
