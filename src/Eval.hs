@@ -80,6 +80,11 @@ customMacroE fn scope = \case
           (result, _) <- evalExpression newScope body
           return (result, scope)
 
+importE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+importE scope = \case
+  [Atom (AtomString file)] -> Left $ EvalError "TODO: Import impl"
+  _ -> Left $ EvalError "Invalid import expression"
+
 evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case
   Atom atom -> case atom of
@@ -94,11 +99,11 @@ evalExpression scope = \case
     "-" -> foldInts scope (-) 0 lst
     "*" -> foldInts scope (*) 1 lst
     "/" -> foldInts scope div 1 lst
-    -- (lambda (a b c d) (+ a b c d))
     "lambda" -> lambdaE scope lst
     "do" -> doblockE scope lst
     "declare" -> declareE scope lst
     "let" -> letbindingE scope lst
+    "import" -> importE scope lst
     fn -> customMacroE fn scope lst
   _ -> Left $ EvalError "TODO: Not impl out"
 
