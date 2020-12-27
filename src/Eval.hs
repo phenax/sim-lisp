@@ -12,6 +12,8 @@ import Utils
 
 type Scope = Map.Map String Atom
 
+type MacroEvaluator = Scope -> [Expression] -> Either Error (Atom, Scope)
+
 emptyScope = Map.empty
 
 evalConcat :: Scope -> [Expression] -> Either Error [(Atom, Scope)]
@@ -27,10 +29,7 @@ foldInts scope fn init = folder scope <=< evalConcat scope
       ((AtomInt a, currentScope) : tail) -> (,scope) . mapInt (`fn` a) . fst <$> folder currentScope tail
       _ -> Left $ EvalError "Invalid set of params"
 
-evalExpressionPure :: Scope -> Expression -> Either Error Atom
-evalExpressionPure scope = fmap fst . evalExpression scope
-
-lambdaE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+lambdaE :: MacroEvaluator
 lambdaE scope = \case
   [SymbolExpression args, body] ->
     if all isSymbol args
@@ -38,7 +37,7 @@ lambdaE scope = \case
       else Left $ EvalError "Invalid arguments passed to `lambda` expression"
   _ -> Left $ EvalError "Invalid `lambda` expression"
 
-doblockE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+doblockE :: MacroEvaluator
 doblockE scope = \case
   [] -> Left $ EvalError "Empty `do` block"
   lst -> foldl evaluateExpr (Right (AtomInt 0, scope)) lst
@@ -47,13 +46,13 @@ doblockE scope = \case
         (_, lastScope) <- result
         evalExpression lastScope expr
 
-declareE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+declareE :: MacroEvaluator
 declareE scope = \case
   [Atom (AtomSymbol k), expr] ->
     (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
   _ -> Left $ EvalError "Invalid `declare` expression"
 
-letbindingE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+letbindingE :: MacroEvaluator
 letbindingE scope = \case
   [SymbolExpression params, expression] -> do
     -- Evaluate params
@@ -67,7 +66,7 @@ letbindingE scope = \case
      in evalExpression newScope expression
   _ -> Left $ EvalError "Invalid `let` expression"
 
-customMacroE :: String -> Scope -> [Expression] -> Either Error (Atom, Scope)
+customMacroE :: String -> MacroEvaluator
 customMacroE fn scope = \case
   arguments ->
     let lambda = case Map.lookup fn scope of
@@ -80,12 +79,12 @@ customMacroE fn scope = \case
           (result, _) <- evalExpression newScope body
           return (result, scope)
 
-importE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+importE :: MacroEvaluator
 importE scope = \case
   [Atom (AtomString file)] -> Left $ EvalError "TODO: Import impl"
   _ -> Left $ EvalError "Invalid import expression"
 
-compare2E :: [Ordering] -> Scope -> [Expression] -> Either Error (Atom, Scope)
+compare2E :: [Ordering] -> MacroEvaluator
 compare2E ordering scope = \case
   [exp1, exp2] -> do
     a <- evalExpressionPure scope exp1
@@ -94,6 +93,10 @@ compare2E ordering scope = \case
     where
       check = \a b -> compareAtom a b `elem` ordering
   _ -> Left $ EvalError "Invalid number of arguments"
+
+-- Evaluate expression without leaking scope
+evalExpressionPure :: Scope -> Expression -> Either Error Atom
+evalExpressionPure scope = fmap fst . evalExpression scope
 
 evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case

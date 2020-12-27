@@ -8,11 +8,10 @@ import Errors
 import Eval
 import LParser
 import Test.Hspec
-import Text.Parsec
 import Text.RawString.QQ
 
 evalExpressionTests = do
-  let eval = evalExpressionPure emptyScope <=< (withParseErr . parse expressionP "Expr")
+  let eval = evaluate <=< tokenize
    in describe "evalExpression" $ do
         it "should be identity for single args" $ do
           eval "(+ 5)" `shouldBe` Right (AtomInt 5)
@@ -122,7 +121,7 @@ evalExpressionTests = do
                 (mul (lambda (x) (* x 5)))
                 (incr (lambda (x) (+ x 1)))
               ) (incr (mul 3)))
-            "|]
+              )"|]
               `shouldBe` Right (AtomInt 16)
           it "should create a lambda atom" $ do
             eval "(lambda (x) (+ x 1))"
@@ -133,11 +132,6 @@ evalExpressionTests = do
                     )
                 )
 
---
---
---
---
---
 --
 --
 --
