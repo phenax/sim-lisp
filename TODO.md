@@ -7,10 +7,11 @@
   - [X] Bool
   - [X] Loading stdlib
   - [X] Fix scope issue for lambda
-  - [ ] Fix repl to maintain global scope
-  - [ ] Boolean helpers (`cond`)
+  - [X] Fix repl to maintain global scope
+  - [X] `def` - Define macros
+  - [ ] Boolean helpers (`if`, `cond`, conditional combinators)
+  - [ ] Make `=` work with any number of args
   - [ ] `import` - Import module
-  - [ ] `def` - Define macros
   - [ ] `quote` - Symbols?
   - [ ] core stdlib
   - [ ] List

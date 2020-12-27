@@ -31,6 +31,6 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [] -> interpretFile "./examples/fibo.scm"
+    [] -> repl emptyScope
     ["repl"] -> repl emptyScope
     (file : _) -> interpretFile file

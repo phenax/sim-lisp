@@ -58,6 +58,16 @@ declareE scope = \case
     (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
   _ -> Left $ EvalError "Invalid `declare` expression"
 
+defineFunctionE :: MacroEvaluator
+defineFunctionE scope = \case
+  [Atom (AtomSymbol name), SymbolExpression args, body] ->
+    if all isSymbol args
+      then defineLambda <$> (toEither . mergeM . map toSymbolString) args
+      else Left $ EvalError "Invalid arguments passed to `lambda` expression"
+    where
+      defineLambda = \params -> let lambda = AtomLambda params body in (lambda, Map.insert name lambda scope)
+  _ -> Left $ EvalError "Invalid `def` expression"
+
 letbindingE :: MacroEvaluator
 letbindingE scope = \case
   [SymbolExpression params, expression] -> do
@@ -137,6 +147,7 @@ evalExpression scope = \case
     "if" -> ifE scope lst
     "do" -> doblockE scope lst
     "declare" -> declareE scope lst
+    "def" -> defineFunctionE scope lst
     "let" -> letbindingE scope lst
     "import" -> importE scope lst
     fn -> customMacroE fn scope lst
@@ -167,7 +178,4 @@ evaluate exprs = fst <$> evaluateWithStdlib emptyScope exprs
 interpret :: Scope -> String -> Either Error (Atom, Scope)
 interpret scope = evaluateWithStdlib scope <=< tokenize
 
---
---
---
 --

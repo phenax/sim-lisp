@@ -167,10 +167,21 @@ evalExpressionTests = do
                     )
                 )
 
+        describe "def" $ do
+          it "should do factorial with def expression" $ do
+            eval
+              [r|(def fact (x) (
+                  if (<= x 2)
+                    x
+                    (* x (fact (- x 1)))
+                ))
+
+               (fact 5)
+              )"|]
+              `shouldBe` Right (AtomInt 120)
+
         describe "stdlib loaded" $ do
           it "should be identity for single args" $ do
             eval "stdlib-loaded?" `shouldBe` Right (AtomBool True)
 
---
---
 --
