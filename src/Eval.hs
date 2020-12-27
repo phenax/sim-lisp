@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
 module Eval where
@@ -8,6 +10,7 @@ import Control.Monad
 import qualified Data.Map as Map
 import Errors
 import LParser
+import Text.RawString.QQ
 import Utils
 
 type Scope = Map.Map String Atom
@@ -101,12 +104,10 @@ evalExpressionPure scope = fmap fst . evalExpression scope
 evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case
   Atom atom -> case atom of
-    AtomInt n -> Right (AtomInt n, scope)
-    AtomString s -> Right (AtomString s, scope)
     AtomSymbol k -> case Map.lookup k scope of
       Just value -> Right (value, scope)
       Nothing -> Left $ EvalError $ "Variable " ++ k ++ " not found in scope"
-    _ -> Left $ EvalError "TODO: Atom not implemented"
+    a -> Right (a, scope)
   SymbolExpression (Atom (AtomSymbol op) : lst) -> case op of
     "+" -> foldInts scope (+) 0 lst
     "-" -> foldInts scope (-) 0 lst
@@ -125,10 +126,25 @@ evalExpression scope = \case
     fn -> customMacroE fn scope lst
   _ -> Left $ EvalError "TODO: Not impl out"
 
-evaluate :: [Expression] -> Either Error Atom
-evaluate = evalExpressionPure emptyScope . SymbolExpression . makeDo
+evaluateWithScope :: Scope -> [Expression] -> Either Error (Atom, Scope)
+evaluateWithScope scope = evalExpression scope . SymbolExpression . makeDo
   where
     makeDo = (Atom (AtomSymbol "do") :)
+
+loadLibrarysIntoScope :: Scope -> Either Error Scope
+loadLibrarysIntoScope scope = snd <$> (libraryAst >>= evaluateWithScope scope)
+  where
+    libraryAst =
+      tokenize
+        [r|
+      (declare stdlib-loaded? T)
+      |]
+
+evaluate :: [Expression] -> Either Error Atom
+evaluate exprs = do
+  scope <- loadLibrarysIntoScope emptyScope
+  (result, _) <- evaluateWithScope scope exprs
+  return result
 
 interpret :: String -> IO ()
 interpret = print . fmap evaluate . tokenize

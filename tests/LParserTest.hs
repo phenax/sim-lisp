@@ -59,6 +59,9 @@ valueParsers = do
           parseValue "wor-l*!!!d" `shouldBe` Right (sym "wor-l*!!!d")
           parseValue "nice?" `shouldBe` Right (sym "nice?")
           parseValue "+" `shouldBe` Right (sym "+")
+
+  let parseValue = parse booleanP "Boolean"
+   in describe "booleanP" $ do
         it "should parse T and F to booleans" $ do
           parseValue "T" `shouldBe` Right ((Atom . AtomBool) True)
           parseValue "F" `shouldBe` Right ((Atom . AtomBool) False)
@@ -80,6 +83,8 @@ expressionParsers = do
           parseValue "(+ 1 (- 3 2))" `shouldBe` Right (SymbolExpression [sym "+", (Atom . AtomInt) 1, SymbolExpression [sym "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]])
         it "should parse with any whitespace" $ do
           parseValue " (\t+    1 (  \n  - 3  \t  2))" `shouldBe` Right (SymbolExpression [sym "+", (Atom . AtomInt) 1, SymbolExpression [sym "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]])
+        it "should parse booleans" $ do
+          parseValue "(fn T F)" `shouldBe` Right (SymbolExpression [Atom (AtomSymbol "fn"), Atom . AtomBool $ True, Atom . AtomBool $ False])
 
   let parseValue = parse multipleExpressionsP "MultipleExpr"
    in describe "multipleExpressionsP" $ do

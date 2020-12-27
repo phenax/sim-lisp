@@ -34,18 +34,16 @@ listP = do
   return . Atom . AtomList $ exprs
 
 parseSymbolString :: Parsec String u String
-parseSymbolString = many1 $ letter <|> digit <|> oneOf ['+', '-', '*', '/', '\'', '<', '>', '=', '!', '%', '&', '.', ':', '?', '@', '$', '^']
+parseSymbolString = many1 $ alphaNum <|> oneOf ['+', '-', '*', '/', '<', '>', '=', '!', '%', '&', '.', '?', '@', '$']
 
 symbolP :: Parsec String u Expression
-symbolP = toAtom <$> parseSymbolString
-  where
-    toAtom = \case
-      "T" -> Atom . AtomBool $ True
-      "F" -> Atom . AtomBool $ False
-      s -> Atom . AtomSymbol $ s
+symbolP = Atom . AtomSymbol <$> parseSymbolString
+
+booleanP :: Parsec String u Expression
+booleanP = Atom . AtomBool <$> ((True <$ string "T") <|> (False <$ string "F"))
 
 atomP :: Parsec String u Expression
-atomP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "Syntax error")
+atomP = withWhitespace (numberP <|> stringP <|> listP <|> booleanP <|> symbolP <?> "Syntax error")
 
 sExpressionP = withWhitespace $ do
   char '('

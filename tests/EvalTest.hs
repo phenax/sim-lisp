@@ -132,6 +132,10 @@ evalExpressionTests = do
                     )
                 )
 
+        describe "stdlib loaded" $ do
+          it "should be identity for single args" $ do
+            eval "stdlib-loaded?" `shouldBe` Right (AtomBool True)
+
 --
 --
 --
