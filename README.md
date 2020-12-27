@@ -1,2 +1,3 @@
 # sim-lisp
-Fucking around in haskell
+A dialect of lisp based on scheme
+
