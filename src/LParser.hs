@@ -34,7 +34,7 @@ listP = do
   return . Atom . AtomList $ exprs
 
 parseSymbolString :: Parsec String u String
-parseSymbolString = many1 $ alphaNum <|> oneOf ['+', '-', '*', '/', '<', '>', '=', '!', '%', '&', '.', '?', '@', '$']
+parseSymbolString = many1 $ alphaNum <|> oneOf ['+', '-', '*', '/', '<', '>', '=', '!', '%', '&', '.', '?', '@', '$', '_']
 
 symbolP :: Parsec String u Expression
 symbolP = Atom . AtomSymbol <$> parseSymbolString
@@ -45,6 +45,9 @@ booleanP = Atom . AtomBool <$> ((True <$ string "T") <|> (False <$ string "F"))
 atomP :: Parsec String u Expression
 atomP = withWhitespace (numberP <|> stringP <|> listP <|> booleanP <|> symbolP <?> "Syntax error")
 
+commentP :: Parsec String u Expression
+commentP = (\_ -> SymbolExpression [Atom (AtomSymbol "do")]) <$> (char ';' >> anyChar `manyTill` newline)
+
 sExpressionP = withWhitespace $ do
   char '('
   whitespace
@@ -53,7 +56,7 @@ sExpressionP = withWhitespace $ do
   char ')'
   return $ SymbolExpression arg
 
-expressionP = withWhitespace $ sExpressionP <|> atomP
+expressionP = withWhitespace $ sExpressionP <|> atomP <|> commentP
 
 multipleExpressionsP = withWhitespace $ expressionP `sepBy` whitespace
 

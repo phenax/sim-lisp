@@ -44,13 +44,11 @@ lambdaE scope = \case
   _ -> Left $ EvalError "Invalid `lambda` expression"
 
 doblockE :: MacroEvaluator
-doblockE scope = \case
-  [] -> Left $ EvalError "Empty `do` block"
-  lst -> foldl evaluateExpr (Right (AtomInt 0, scope)) lst
-    where
-      evaluateExpr = \result expr -> do
-        (_, lastScope) <- result
-        evalExpression lastScope expr
+doblockE scope = foldl evaluateExpr (Right (AtomInt 0, scope))
+  where
+    evaluateExpr = \result expr -> do
+      (_, lastScope) <- result
+      evalExpression lastScope expr
 
 declareE :: MacroEvaluator
 declareE scope = \case

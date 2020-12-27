@@ -9,6 +9,8 @@
   - [X] Fix scope issue for lambda
   - [X] Fix repl to maintain global scope
   - [X] `def` - Define macros
+  - [X] Comments
+  - [ ] Meta stuff
   - [ ] Boolean helpers (`if`, `cond`, conditional combinators)
   - [ ] Make `=` work with any number of args
   - [ ] `import` - Import module

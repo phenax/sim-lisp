@@ -1,9 +1,12 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module LParserTest where
 
 import Atom
 import LParser
 import Test.Hspec
 import Text.Parsec
+import Text.RawString.QQ
 
 sym = Atom . AtomSymbol
 
@@ -93,4 +96,25 @@ expressionParsers = do
             `shouldBe` Right
               [ SymbolExpression [sym "+", (Atom . AtomInt) 1, SymbolExpression [sym "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]],
                 SymbolExpression [sym "+", (Atom . AtomInt) 3, SymbolExpression [sym "*", (Atom . AtomInt) 9, (Atom . AtomInt) 6], (Atom . AtomInt) 5]
+              ]
+        it "should parse comments out" $ do
+          parseValue
+            [r|
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            (declare x 20) ; Extra commenty
+            (declare y 10) ; Extra commenty
+            ; hello world
+            (+ x y) ; cool
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          |]
+            `shouldBe` Right
+              [ SymbolExpression [sym "do"],
+                SymbolExpression [sym "declare", sym "x", Atom $ AtomInt 20],
+                SymbolExpression [sym "do"],
+                SymbolExpression [sym "declare", sym "y", Atom $ AtomInt 10],
+                SymbolExpression [sym "do"],
+                SymbolExpression [sym "do"],
+                SymbolExpression [sym "+", sym "x", sym "y"],
+                SymbolExpression [sym "do"],
+                SymbolExpression [sym "do"]
               ]
