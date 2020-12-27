@@ -43,6 +43,26 @@ valueParsers = do
                   ]
               )
 
+  let parseValue = parse symbolP "Symbol"
+   in describe "symbolP" $ do
+        it "should parse words to symbol" $ do
+          parseValue "hello" `shouldBe` Right (sym "hello")
+          parseValue "world" `shouldBe` Right (sym "world")
+          parseValue "nice" `shouldBe` Right (sym "nice")
+          parseValue "Tit" `shouldBe` Right (sym "Tit")
+          parseValue "Fuck" `shouldBe` Right (sym "Fuck")
+        it "should allow numbers" $ do
+          parseValue "hello121world" `shouldBe` Right (sym "hello121world")
+          parseValue "121world" `shouldBe` Right (sym "121world")
+        it "should allow special characters" $ do
+          parseValue "he+llo" `shouldBe` Right (sym "he+llo")
+          parseValue "wor-l*!!!d" `shouldBe` Right (sym "wor-l*!!!d")
+          parseValue "nice?" `shouldBe` Right (sym "nice?")
+          parseValue "+" `shouldBe` Right (sym "+")
+        it "should parse T and F to booleans" $ do
+          parseValue "T" `shouldBe` Right ((Atom . AtomBool) True)
+          parseValue "F" `shouldBe` Right ((Atom . AtomBool) False)
+
 expressionParsers = do
   let parseValue = parse expressionP "Expr"
    in describe "expressionP" $ do

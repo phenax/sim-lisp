@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module LParser where
 
 import Atom
@@ -32,13 +34,18 @@ listP = do
   return . Atom . AtomList $ exprs
 
 parseSymbolString :: Parsec String u String
-parseSymbolString = many1 $ letter <|> oneOf ['+', '-', '*', '/', '\'', '<', '>', '=', '!', '%', '&', '.', ':', '?', '@', '$', '^']
+parseSymbolString = many1 $ letter <|> digit <|> oneOf ['+', '-', '*', '/', '\'', '<', '>', '=', '!', '%', '&', '.', ':', '?', '@', '$', '^']
 
 symbolP :: Parsec String u Expression
-symbolP = Atom . AtomSymbol <$> parseSymbolString
+symbolP = toAtom <$> parseSymbolString
+  where
+    toAtom = \case
+      "T" -> Atom . AtomBool $ True
+      "F" -> Atom . AtomBool $ False
+      s -> Atom . AtomSymbol $ s
 
 atomP :: Parsec String u Expression
-atomP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "wtf value is this dude?")
+atomP = withWhitespace (numberP <|> stringP <|> listP <|> symbolP <?> "Syntax error")
 
 sExpressionP = withWhitespace $ do
   char '('

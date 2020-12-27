@@ -7,14 +7,7 @@ import Errors
 data Expression
   = Atom Atom
   | SymbolExpression [Expression]
-  deriving (Eq)
-
-instance Show Expression where
-  show (Atom (AtomInt n)) = show n
-  show (Atom (AtomString s)) = "\"" ++ s ++ "\""
-  show (Atom (AtomList exprs)) = "(" ++ (unwords . map show $ exprs) ++ ")"
-  show (Atom (AtomSymbol s)) = s
-  show (SymbolExpression lst) = "(" ++ (unwords . map show $ lst) ++ ")"
+  deriving (Eq, Show)
 
 data Atom
   = AtomString String
@@ -23,7 +16,15 @@ data Atom
   | AtomList [Expression]
   | AtomSymbol String
   | AtomLambda [String] Expression
-  deriving (Show, Eq)
+  deriving (Eq)
+
+instance Show Atom where
+  show (AtomInt n) = show n
+  show (AtomString s) = "\"" ++ s ++ "\""
+  show (AtomList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
+  show (AtomSymbol s) = s
+  show (AtomBool b) = if b then "T" else "F"
+  show (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"
 
 letPair :: Expression -> Either Error (String, Expression)
 letPair = \case
