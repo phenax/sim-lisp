@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module EvalTest where
 
 import Control.Monad
@@ -6,6 +8,7 @@ import Eval
 import LParser
 import Test.Hspec
 import Text.Parsec
+import Text.RawString.QQ
 
 evalExpressionTests = do
   let eval = evalExpression emptyScope <=< (withParseErr . parse expressionP "Expr")
@@ -34,8 +37,25 @@ evalExpressionTests = do
           eval "(+ 10 (+ 12 \"1\"))" `shouldBe` Left (EvalError "Invalid set of params")
 
         describe "let" $ do
-          it "should do stuff" $ do
+          it "should provide definied variables inside the scope" $ do
             eval "(let ((x 5) (y 6)) (+ x (* y 2)))" `shouldBe` Right (AtomInt 17)
+          it "should allow let inside let definitions" $ do
+            eval
+              [r|(let (
+                (x 5)
+                (y (let ((beam 200)) (/ beam 10) ))
+              ) (+ x (* y 2)))
+            |]
+              `shouldBe` Right (AtomInt 45)
+          it "should allow nesting let statements" $ do
+            eval
+              [r|(let (
+                (x 5)
+              ) (let ( (y 2) ) (* x y 2) ))
+            |]
+              `shouldBe` Right (AtomInt 20)
+          it "should allow shadowing let values" $ do
+            eval "(let ((x 5)) (let ((x 2)) x))" `shouldBe` Right (AtomInt 2)
 
         describe "lambda" $ do
           xit "should do stuff" $ do

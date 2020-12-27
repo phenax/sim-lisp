@@ -61,21 +61,27 @@ evalExpression scope = \case
     AtomString s -> Right $ AtomString s
     AtomSymbol k -> case Map.lookup k scope of
       Just value -> Right value
-      Nothing -> Left $ EvalError "Variable not found"
+      Nothing -> Left $ EvalError $ "Variable " ++ k ++ " not found in scope"
     _ -> Left $ EvalError "TODO: Atom not implemented"
   SymbolExpression (Atom (AtomSymbol op) : lst) -> case op of
     "+" -> foldInts scope (+) 0 lst
     "-" -> foldInts scope (-) 0 lst
     "*" -> foldInts scope (*) 1 lst
     "/" -> foldInts scope div 1 lst
+    -- (lambda (a b c d) (+ a b c d))
+    --"lambda" -> case lst of
+    --[SymbolExpression args, SymbolExpression body] ->
+    ----
+    ----
+    --Left $ EvalError "TODO: impl"
     "let" -> case lst of
-      [SymbolExpression params, SymbolExpression body] -> do
+      [SymbolExpression params, expression] -> do
         -- Evaluate params
         paramMap <- (fmap Map.fromList . flattenPairBySnd) <=< (mergeM . map (fmap (mapSnd (evalExpression scope)) . letPair)) $ params
         -- Inject params into scope
         -- Evaluate body with newScope
         let newScope = paramMap `Map.union` scope
-         in evalExpression newScope $ SymbolExpression body
+         in evalExpression newScope expression
       _ -> Left $ EvalError "Invalid `let` expression"
     fn -> Left $ EvalError $ "TODO: Macro not implemented (" ++ fn ++ ")"
   _ -> Left $ EvalError "TODO: Not impl out"
