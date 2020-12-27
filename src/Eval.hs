@@ -156,14 +156,16 @@ loadLibrarysIntoScope scope = snd <$> (libraryAst >>= evaluateWithScope scope)
     libraryAst =
       tokenize $ unwords stdlibContent
 
-evaluate :: [Expression] -> Either Error Atom
-evaluate exprs = do
-  scope <- loadLibrarysIntoScope emptyScope
-  (result, _) <- evaluateWithScope scope exprs
-  return result
+evaluateWithStdlib :: Scope -> [Expression] -> Either Error (Atom, Scope)
+evaluateWithStdlib parentScope exprs = do
+  scope <- loadLibrarysIntoScope parentScope
+  evaluateWithScope scope exprs
 
-interpret :: String -> IO ()
-interpret = print . fmap evaluate . tokenize
+evaluate :: [Expression] -> Either Error Atom
+evaluate exprs = fst <$> evaluateWithStdlib emptyScope exprs
+
+interpret :: Scope -> String -> Either Error (Atom, Scope)
+interpret scope = evaluateWithStdlib scope <=< tokenize
 
 --
 --
