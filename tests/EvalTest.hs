@@ -91,5 +91,20 @@ evalExpressionTests = do
             eval "(let ((x 5)) (let ((x 2)) x))" `shouldBe` Right (AtomInt 2)
 
         describe "lambda" $ do
-          xit "should do stuff" $ do
-            eval "(lambda (x) (+ x 1))" `shouldBe` Left (EvalError "Invalid set of params")
+          it "should do stuff" $ do
+            eval "(lambda (x) (+ x 1))"
+              `shouldBe` Right
+                ( AtomLambda
+                    [AtomSymbol "x"]
+                    ( SymbolExpression [Atom (AtomSymbol "+"), Atom (AtomSymbol "x"), Atom (AtomInt 1)]
+                    )
+                )
+
+--
+--
+--
+--
+--
+--
+--
+--

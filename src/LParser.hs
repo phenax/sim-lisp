@@ -9,6 +9,7 @@ data Atom
   | AtomBool Bool
   | AtomList [Expression]
   | AtomSymbol String
+  | AtomLambda [Atom] Expression
   deriving (Show, Eq)
 
 data Expression

@@ -18,7 +18,7 @@ mapInt fn = \case
   AtomInt x -> AtomInt $ fn x
   x -> x
 
-innerConcat :: Either e [a] -> Either e a -> Either e [a]
+innerConcat :: Monad f => f [a] -> f a -> f [a]
 innerConcat list item = do
   ls <- list
   x <- item
@@ -31,8 +31,8 @@ innerConcatPair list item = do
   x <- snd item
   return $ (fst item, x) : ls
 
-mergeM :: [Either e a] -> Either e [a]
-mergeM = foldl innerConcat (Right [])
+mergeM :: Monad f => [f a] -> f [a]
+mergeM = foldl innerConcat (return [])
 
 evalConcat :: Scope -> [Expression] -> Either Error [(Atom, Scope)]
 evalConcat scope = mergeM . map (evalExpression scope)
@@ -58,6 +58,21 @@ flattenPairBySnd = foldl innerConcatPair (Right [])
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
 evalExpressionPure scope = fmap fst . evalExpression scope
 
+isSymbol :: Expression -> Bool
+isSymbol = \case
+  Atom (AtomSymbol _) -> True
+  _ -> False
+
+toAtom :: Expression -> Maybe Atom
+toAtom = \case
+  Atom a -> Just a
+  _ -> Nothing
+
+toEither :: Maybe a -> Either Error a
+toEither = \case
+  Just x -> Right x
+  Nothing -> Left $ EvalError "Invalid syntax"
+
 evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case
   Atom atom -> case atom of
@@ -73,11 +88,12 @@ evalExpression scope = \case
     "*" -> foldInts scope (*) 1 lst
     "/" -> foldInts scope div 1 lst
     -- (lambda (a b c d) (+ a b c d))
-    --"lambda" -> case lst of
-    --[SymbolExpression args, SymbolExpression body] ->
-    ----
-    ----
-    --Left $ EvalError "TODO: impl"
+    "lambda" -> case lst of
+      [SymbolExpression args, body] ->
+        if all isSymbol args
+          then (\params -> (AtomLambda params body, scope)) <$> (toEither . mergeM . map toAtom) args
+          else Left $ EvalError "Invalid arguments passed to `lambda` expression"
+      _ -> Left $ EvalError "Invalid `lambda` expression"
     "do" -> case lst of
       [] -> Left $ EvalError "`do` block cannot be empty"
       lst -> foldl evaluateExpr (Right (AtomInt 0, scope)) lst
