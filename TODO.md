@@ -3,11 +3,13 @@
   - [X] `let` - Define scoped variables
   - [X] `do` - Block of expressions
   - [X] `lambda` - Define lambda
+  - [X] Fix numbers in variable names issue
+  - [X] Bool
+  - [ ] Boolean helpers (`cond`)
+  - [ ] Standard library
   - [ ] `import` - Import module
-  - [ ] Fix numbers in variable names issue
   - [ ] `def` - Define macros
   - [ ] `quote` - Symbols?
-  - [ ] Bool
   - [ ] String ops
   - [ ] List
   - [ ] Call stack

@@ -85,6 +85,16 @@ importE scope = \case
   [Atom (AtomString file)] -> Left $ EvalError "TODO: Import impl"
   _ -> Left $ EvalError "Invalid import expression"
 
+compare2E :: [Ordering] -> Scope -> [Expression] -> Either Error (Atom, Scope)
+compare2E ordering scope = \case
+  [exp1, exp2] -> do
+    a <- evalExpressionPure scope exp1
+    b <- evalExpressionPure scope exp2
+    return (AtomBool (check a b), scope)
+    where
+      check = \a b -> compareAtom a b `elem` ordering
+  _ -> Left $ EvalError "Invalid number of arguments"
+
 evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case
   Atom atom -> case atom of
@@ -99,6 +109,11 @@ evalExpression scope = \case
     "-" -> foldInts scope (-) 0 lst
     "*" -> foldInts scope (*) 1 lst
     "/" -> foldInts scope div 1 lst
+    "=" -> compare2E [EQ] scope lst
+    "<" -> compare2E [LT] scope lst
+    "<=" -> compare2E [LT, EQ] scope lst
+    ">" -> compare2E [GT] scope lst
+    ">=" -> compare2E [GT, EQ] scope lst
     "lambda" -> lambdaE scope lst
     "do" -> doblockE scope lst
     "declare" -> declareE scope lst

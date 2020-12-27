@@ -37,6 +37,20 @@ evalExpressionTests = do
           eval "(+ 10 \"fucking hell\" 5)" `shouldBe` Left (EvalError "Invalid set of params")
           eval "(+ 10 (+ 12 \"1\"))" `shouldBe` Left (EvalError "Invalid set of params")
 
+        describe "bool operations" $ do
+          it "should compare numbers correctly" $ do
+            eval "(< 5 1)" `shouldBe` Right (AtomBool False)
+            eval "(< 1 5)" `shouldBe` Right (AtomBool True)
+            eval "(> 5 1)" `shouldBe` Right (AtomBool True)
+            eval "(= 5 5)" `shouldBe` Right (AtomBool True)
+            eval "(= 5 2)" `shouldBe` Right (AtomBool False)
+            eval "(> 5 5)" `shouldBe` Right (AtomBool False)
+            eval "(>= 5 5)" `shouldBe` Right (AtomBool True)
+            eval "(>= 5 2)" `shouldBe` Right (AtomBool True)
+            eval "(< 5 5)" `shouldBe` Right (AtomBool False)
+            eval "(<= 5 5)" `shouldBe` Right (AtomBool True)
+            eval "(<= 2 5)" `shouldBe` Right (AtomBool True)
+
         describe "do" $ do
           it "should return last expression from block" $ do
             eval
