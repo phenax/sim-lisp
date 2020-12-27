@@ -2,12 +2,11 @@
   - [X] `declare` - Define global variables
   - [X] `let` - Define scoped variables
   - [X] `do` - Block of expressions
-  - [ ] Fix numbers in variable names issue
+  - [X] `lambda` - Define lambda
   - [ ] `import` - Import module
+  - [ ] Fix numbers in variable names issue
   - [ ] `def` - Define macros
   - [ ] `quote` - Symbols?
-  - [ ] `lambda` - Define lambda
-  - [ ] `constant` - Define constants
   - [ ] Bool
   - [ ] String ops
   - [ ] List

@@ -2,6 +2,7 @@
 
 module EvalTest where
 
+import Atom
 import Control.Monad
 import Errors
 import Eval

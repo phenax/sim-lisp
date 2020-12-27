@@ -3,36 +3,16 @@
 
 module Eval where
 
+import Atom
 import Control.Monad
 import qualified Data.Map as Map
 import Errors
 import LParser
+import Utils
 
 type Scope = Map.Map String Atom
 
 emptyScope = Map.empty
-
-mapSnd fn (a, b) = (a, fn b)
-
-mapInt fn = \case
-  AtomInt x -> AtomInt $ fn x
-  x -> x
-
-innerConcat :: Monad f => f [a] -> f a -> f [a]
-innerConcat list item = do
-  ls <- list
-  x <- item
-  return $ x : ls
-
--- TODO: Refactor both to use an innerConcatBy
-innerConcatPair :: Either e [(a, b)] -> (a, Either e b) -> Either e [(a, b)]
-innerConcatPair list item = do
-  ls <- list
-  x <- snd item
-  return $ (fst item, x) : ls
-
-mergeM :: Monad f => [f a] -> f [a]
-mergeM = foldl innerConcat (return [])
 
 evalConcat :: Scope -> [Expression] -> Either Error [(Atom, Scope)]
 evalConcat scope = mergeM . map (evalExpression scope)
@@ -47,31 +27,58 @@ foldInts scope fn init = folder scope <=< evalConcat scope
       ((AtomInt a, currentScope) : tail) -> (,scope) . mapInt (`fn` a) . fst <$> folder currentScope tail
       _ -> Left $ EvalError "Invalid set of params"
 
-letPair :: Expression -> Either Error (String, Expression)
-letPair = \case
-  SymbolExpression [Atom (AtomSymbol s), expr] -> Right (s, expr)
-  _ -> Left $ EvalError "Invalid `let` binding"
-
-flattenPairBySnd :: [(k, Either e a)] -> Either e [(k, a)]
-flattenPairBySnd = foldl innerConcatPair (Right [])
-
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
 evalExpressionPure scope = fmap fst . evalExpression scope
 
-isSymbol :: Expression -> Bool
-isSymbol = \case
-  Atom (AtomSymbol _) -> True
-  _ -> False
+lambdaE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+lambdaE scope = \case
+  [SymbolExpression args, body] ->
+    if all isSymbol args
+      then (\params -> (AtomLambda params body, scope)) <$> (toEither . mergeM . map toSymbolString) args
+      else Left $ EvalError "Invalid arguments passed to `lambda` expression"
+  _ -> Left $ EvalError "Invalid `lambda` expression"
 
-toSymbolString :: Expression -> Maybe String
-toSymbolString = \case
-  Atom (AtomSymbol s) -> Just s
-  _ -> Nothing
+doblockE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+doblockE scope = \case
+  [] -> Left $ EvalError "Empty `do` block"
+  lst -> foldl evaluateExpr (Right (AtomInt 0, scope)) lst
+    where
+      evaluateExpr = \result expr -> do
+        (_, lastScope) <- result
+        evalExpression lastScope expr
 
-toEither :: Maybe a -> Either Error a
-toEither = \case
-  Just x -> Right x
-  Nothing -> Left $ EvalError "Invalid syntax"
+declareE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+declareE scope = \case
+  [Atom (AtomSymbol k), expr] ->
+    (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
+  _ -> Left $ EvalError "Invalid `declare` expression"
+
+letbindingE :: Scope -> [Expression] -> Either Error (Atom, Scope)
+letbindingE scope = \case
+  [SymbolExpression params, expression] -> do
+    -- Evaluate params
+    paramMap <-
+      let bindingsToScope = fmap (Map.fromList . map (mapSnd fst)) . flattenPairBySnd
+          evalArgs = map $ fmap (mapSnd (evalExpression scope)) . letPair
+       in bindingsToScope <=< (mergeM . evalArgs) $ params
+    -- Inject params into scope
+    -- Evaluate body with newScope
+    let newScope = paramMap `Map.union` scope
+     in evalExpression newScope expression
+  _ -> Left $ EvalError "Invalid `let` expression"
+
+customMacroE :: String -> Scope -> [Expression] -> Either Error (Atom, Scope)
+customMacroE fn scope = \case
+  arguments ->
+    let lambda = case Map.lookup fn scope of
+          Just (AtomLambda params body) -> Right (params, body)
+          _ -> Left $ EvalError ("Invalid call. `" ++ fn ++ "` is not a macro")
+        toScope params = (scope `Map.union`) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
+     in do
+          (params, body) <- lambda
+          newScope <- toScope params
+          (result, _) <- evalExpression newScope body
+          return (result, scope)
 
 evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case
@@ -88,46 +95,11 @@ evalExpression scope = \case
     "*" -> foldInts scope (*) 1 lst
     "/" -> foldInts scope div 1 lst
     -- (lambda (a b c d) (+ a b c d))
-    "lambda" -> case lst of
-      [SymbolExpression args, body] ->
-        if all isSymbol args
-          then (\params -> (AtomLambda params body, scope)) <$> (toEither . mergeM . map toSymbolString) args
-          else Left $ EvalError "Invalid arguments passed to `lambda` expression"
-      _ -> Left $ EvalError "Invalid `lambda` expression"
-    "do" -> case lst of
-      [] -> Left $ EvalError "Empty `do` block"
-      lst -> foldl evaluateExpr (Right (AtomInt 0, scope)) lst
-        where
-          evaluateExpr = \result expr -> do
-            (_, lastScope) <- result
-            evalExpression lastScope expr
-    "declare" -> case lst of
-      [Atom (AtomSymbol k), expr] ->
-        (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
-      _ -> Left $ EvalError "Invalid `declare` expression"
-    "let" -> case lst of
-      [SymbolExpression params, expression] -> do
-        -- Evaluate params
-        paramMap <-
-          let bindingsToScope = fmap (Map.fromList . map (mapSnd fst)) . flattenPairBySnd
-              evalArgs = map $ fmap (mapSnd (evalExpression scope)) . letPair
-           in bindingsToScope <=< (mergeM . evalArgs) $ params
-        -- Inject params into scope
-        -- Evaluate body with newScope
-        let newScope = paramMap `Map.union` scope
-         in evalExpression newScope expression
-      _ -> Left $ EvalError "Invalid `let` expression"
-    fn -> case lst of
-      arguments ->
-        let lambda = case Map.lookup fn scope of
-              Just (AtomLambda params body) -> Right (params, body)
-              _ -> Left $ EvalError ("Invalid call. `" ++ fn ++ "` is not a macro")
-            toScope params = (scope `Map.union`) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
-         in do
-              (params, body) <- lambda
-              newScope <- toScope params
-              (result, _) <- evalExpression newScope body
-              return (result, scope)
+    "lambda" -> lambdaE scope lst
+    "do" -> doblockE scope lst
+    "declare" -> declareE scope lst
+    "let" -> letbindingE scope lst
+    fn -> customMacroE fn scope lst
   _ -> Left $ EvalError "TODO: Not impl out"
 
 evaluate :: [Expression] -> Either Error Atom

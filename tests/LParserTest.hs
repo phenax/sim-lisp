@@ -1,5 +1,6 @@
 module LParserTest where
 
+import Atom
 import LParser
 import Test.Hspec
 import Text.Parsec

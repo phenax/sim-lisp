@@ -1,28 +1,8 @@
 module LParser where
 
+import Atom
 import Errors
 import Text.Parsec
-
-data Atom
-  = AtomString String
-  | AtomInt Integer
-  | AtomBool Bool
-  | AtomList [Expression]
-  | AtomSymbol String
-  | AtomLambda [String] Expression
-  deriving (Show, Eq)
-
-data Expression
-  = Atom Atom
-  | SymbolExpression [Expression]
-  deriving (Eq)
-
-instance Show Expression where
-  show (Atom (AtomInt n)) = show n
-  show (Atom (AtomString s)) = "\"" ++ s ++ "\""
-  show (Atom (AtomList exprs)) = "(" ++ (unwords . map show $ exprs) ++ ")"
-  show (Atom (AtomSymbol s)) = s
-  show (SymbolExpression lst) = "(" ++ (unwords . map show $ lst) ++ ")"
 
 whitespace :: Parsec String u String
 whitespace = many $ oneOf [' ', '\n', '\t']
