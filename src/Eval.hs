@@ -81,7 +81,10 @@ evalExpression scope = \case
     "let" -> case lst of
       [SymbolExpression params, expression] -> do
         -- Evaluate params
-        paramMap <- (fmap (Map.fromList . map (mapSnd fst)) . flattenPairBySnd) <=< (mergeM . map (fmap (mapSnd (evalExpression scope)) . letPair)) $ params
+        paramMap <-
+          let bindingsToScope = fmap (Map.fromList . map (mapSnd fst)) . flattenPairBySnd
+              evalArgs = map $ fmap (mapSnd (evalExpression scope)) . letPair
+           in bindingsToScope <=< (mergeM . evalArgs) $ params
         -- Inject params into scope
         -- Evaluate body with newScope
         let newScope = paramMap `Map.union` scope
