@@ -36,6 +36,26 @@ evalExpressionTests = do
           eval "(+ 10 \"fucking hell\" 5)" `shouldBe` Left (EvalError "Invalid set of params")
           eval "(+ 10 (+ 12 \"1\"))" `shouldBe` Left (EvalError "Invalid set of params")
 
+        describe "do" $ do
+          it "should return last expression from block" $ do
+            eval
+              [r|
+              (do
+                (+ 1 2)
+                (+ 3 3)
+                (+ 5 6))
+            |]
+              `shouldBe` Right (AtomInt 11)
+          xit "should evaluate all expressions and return last" $ do
+            eval
+              [r|
+              (do
+                (declare x 6)
+                (declare y 3)
+                (* x y))
+            |]
+              `shouldBe` Right (AtomInt 18)
+
         describe "let" $ do
           it "should provide definied variables inside the scope" $ do
             eval "(let ((x 5) (y 6)) (+ x (* y 2)))" `shouldBe` Right (AtomInt 17)

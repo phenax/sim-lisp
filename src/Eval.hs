@@ -78,6 +78,17 @@ evalExpression scope = \case
     ----
     ----
     --Left $ EvalError "TODO: impl"
+    "do" -> case lst of
+      [] -> Left $ EvalError "`do` block cannot be empty"
+      lst -> foldl evaluateExpr (Right (AtomInt 0, scope)) lst
+        where
+          evaluateExpr = \result expr -> do
+            (_, lastScope) <- result
+            evalExpression lastScope expr
+    "declare" -> case lst of
+      [Atom (AtomSymbol s), SymbolExpression expr] ->
+        Left $ EvalError "TODO: impl declare"
+      _ -> Left $ EvalError "Invalid `declare` expression"
     "let" -> case lst of
       [SymbolExpression params, expression] -> do
         -- Evaluate params
