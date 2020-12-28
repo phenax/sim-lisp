@@ -14,9 +14,10 @@
   - [X] `quote`
   - [X] `eval`
   - [X] List ops - `car`, `cdr`, `cons`
-  - [ ] list stdlib
   - [ ] Allow predefined functions to be overridden
-  - [ ] Syntax for eval quote
+  - [ ] list stdlib
+  - [ ] Syntax for eval, quote
+  - [ ] Predefined functions for type checking
   - [ ] Meta stuff
   - [ ] `quasiquote`, `unquote`
   - [ ] simple console io
