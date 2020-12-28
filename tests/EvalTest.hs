@@ -207,6 +207,18 @@ evalExpressionTests = do
             eval [r| (cdr 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cdr`")
             eval [r| (cdr) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cdr`")
 
+        describe "car" $ do
+          it "should prepend item to list" $ do
+            eval [r|(cons 5 (quote (4 3 2 1))) |]
+              `shouldBe` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5), Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
+          it "should return list with first item if cdr is empty" $ do
+            eval [r|(cons 5 (quote ())) |] `shouldBe` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5)]))
+          it "should throw error for non-list args" $ do
+            eval [r| (cons 8 5) |] `shouldBe` Left (EvalError "Invalid argument passed to `cons`")
+          it "should throw error for wrong number of args" $ do
+            eval [r| (cons 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cons`")
+            eval [r| (cons) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cons`")
+
         describe "def" $ do
           it "should do factorial with def expression" $ do
             eval

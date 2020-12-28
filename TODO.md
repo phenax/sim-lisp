@@ -13,7 +13,7 @@
   - [X] Symbol String -> Symbol Expression
   - [X] `quote`
   - [X] `eval`
-  - [X] List ops - `car`, `cdr`
+  - [X] List ops - `car`, `cdr`, `cons`
   - [ ] Syntax for eval quote
   - [ ] Meta stuff
   - [ ] `quasiquote`, `unquote`

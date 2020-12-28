@@ -153,6 +153,16 @@ cdrE scope = \case
       _ -> Left $ EvalError "Invalid argument passed to `cdr`"
   _ -> Left $ EvalError "Invalid number of arguments passed to `cdr`"
 
+consE :: MacroEvaluator
+consE scope = \case
+  [expr1, expr2] -> do
+    a <- evalExpressionPure scope expr1
+    b <- evalExpressionPure scope expr2
+    case b of
+      AtomSymbol (SymbolExpression ls) -> Right $ (AtomSymbol $ SymbolExpression $ Atom a : ls, scope)
+      _ -> Left $ EvalError "Invalid argument passed to `cons`"
+  _ -> Left $ EvalError "Invalid number of arguments passed to `cons`"
+
 -- Evaluate expression without leaking scope
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
 evalExpressionPure scope = fmap fst . evalExpression scope
@@ -177,6 +187,7 @@ evalExpression scope = \case
     "quote" -> quoteE scope lst
     "eval" -> evalE scope lst
     "lambda" -> lambdaE scope lst
+    "cons" -> consE scope lst
     "car" -> carE scope lst
     "cdr" -> cdrE scope lst
     "if" -> ifE scope lst

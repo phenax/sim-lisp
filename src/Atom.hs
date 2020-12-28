@@ -22,6 +22,7 @@ data Atom
 compareAtom (AtomInt a) (AtomInt b) = compare a b
 compareAtom (AtomString a) (AtomString b) = compare a b
 compareAtom (AtomBool a) (AtomBool b) = compare a b
+compareAtom AtomNil AtomNil = EQ
 compareAtom _ _ = LT
 
 --compare (AtomString s) = "\"" ++ s ++ "\""
