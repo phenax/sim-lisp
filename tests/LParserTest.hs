@@ -91,13 +91,13 @@ expressionParsers = do
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           |]
             `shouldBe` Right
-              [ SymbolExpression [createLabel "do"],
+              [ Atom AtomNil,
                 SymbolExpression [createLabel "declare", createLabel "x", Atom $ AtomInt 20],
-                SymbolExpression [createLabel "do"],
+                Atom AtomNil,
                 SymbolExpression [createLabel "declare", createLabel "y", Atom $ AtomInt 10],
-                SymbolExpression [createLabel "do"],
-                SymbolExpression [createLabel "do"],
+                Atom AtomNil,
+                Atom AtomNil,
                 SymbolExpression [createLabel "+", createLabel "x", createLabel "y"],
-                SymbolExpression [createLabel "do"],
-                SymbolExpression [createLabel "do"]
+                Atom AtomNil,
+                Atom AtomNil
               ]

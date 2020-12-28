@@ -203,7 +203,13 @@ evaluateWithScope :: Scope -> [Expression] -> Either Error (Atom, Scope)
 evaluateWithScope scope = evalExpression scope . SymbolExpression . (createLabel "do" :)
 
 stdlibContent :: String
-stdlibContent = unwords $ map BChar8.unpack [$(embedFile "./src/stdlib/core.sim")]
+stdlibContent =
+  unwords $
+    map
+      BChar8.unpack
+      [ $(embedFile "./src/stdlib/core.sim"),
+        $(embedFile "./src/stdlib/list.sim")
+      ]
 
 loadLibrarysIntoScope :: Scope -> Either Error Scope
 loadLibrarysIntoScope scope = snd <$> (tokenize stdlibContent >>= evaluateWithScope scope)
