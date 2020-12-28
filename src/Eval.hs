@@ -10,10 +10,8 @@ import Control.Monad
 import qualified Data.ByteString.Char8 as BChar8
 import Data.FileEmbed
 import qualified Data.Map as Map
-import Debug.Trace
 import Errors
 import LParser
-import Text.RawString.QQ
 import Utils
 
 type Scope = Map.Map String Atom
@@ -52,13 +50,13 @@ doblockE scope = foldl evaluateExpr (Right (AtomInt 0, scope))
 
 declareE :: MacroEvaluator
 declareE scope = \case
-  [Atom (AtomSymbol k), expr] ->
+  [Atom (AtomSymbol (Atom (AtomLabel k))), expr] ->
     (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
   _ -> Left $ EvalError "Invalid `declare` expression"
 
 defineFunctionE :: MacroEvaluator
 defineFunctionE scope = \case
-  [Atom (AtomSymbol name), SymbolExpression args, body] ->
+  [Atom (AtomSymbol (Atom (AtomLabel name))), SymbolExpression args, body] ->
     if all isSymbol args
       then defineLambda <$> (toEither . mergeM . map toSymbolString) args
       else Left $ EvalError "Invalid arguments passed to `lambda` expression"
@@ -93,6 +91,7 @@ customMacroE fn scope = \case
           (result, _) <- evalExpression newScope body
           return (result, scope)
 
+-- TODO: Implement after io setup
 importE :: MacroEvaluator
 importE scope = \case
   [Atom (AtomString file)] -> Left $ EvalError "TODO: Import impl"
@@ -120,6 +119,11 @@ compare2E ordering scope = \case
       check = \a b -> compareAtom a b `elem` ordering
   _ -> Left $ EvalError "Invalid number of arguments"
 
+quoteE :: MacroEvaluator
+quoteE scope = \case
+  [expr] -> Right (AtomSymbol expr, scope)
+  _ -> Left $ EvalError "Invalid number of arguments to `quote`"
+
 -- Evaluate expression without leaking scope
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
 evalExpressionPure scope = fmap fst . evalExpression scope
@@ -127,11 +131,11 @@ evalExpressionPure scope = fmap fst . evalExpression scope
 evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case
   Atom atom -> case atom of
-    AtomSymbol k -> case Map.lookup k scope of
+    AtomSymbol (Atom (AtomLabel k)) -> case Map.lookup k scope of
       Just value -> Right (value, scope)
       Nothing -> Left $ EvalError $ "Variable " ++ k ++ " not found in scope"
     a -> Right (a, scope)
-  SymbolExpression (Atom (AtomSymbol op) : lst) -> case op of
+  SymbolExpression (Atom (AtomSymbol (Atom (AtomLabel op))) : lst) -> case op of
     "+" -> foldInts scope (+) 0 lst
     "-" -> foldInts scope (-) 0 lst
     "*" -> foldInts scope (*) 1 lst
@@ -141,6 +145,7 @@ evalExpression scope = \case
     "<=" -> compare2E [LT, EQ] scope lst
     ">" -> compare2E [GT] scope lst
     ">=" -> compare2E [GT, EQ] scope lst
+    "quote" -> quoteE scope lst
     "lambda" -> lambdaE scope lst
     "if" -> ifE scope lst
     "do" -> doblockE scope lst
@@ -152,18 +157,13 @@ evalExpression scope = \case
   _ -> Left $ EvalError "TODO: Not impl out"
 
 evaluateWithScope :: Scope -> [Expression] -> Either Error (Atom, Scope)
-evaluateWithScope scope = evalExpression scope . SymbolExpression . makeDo
-  where
-    makeDo = (Atom (AtomSymbol "do") :)
+evaluateWithScope scope = evalExpression scope . SymbolExpression . (createLabel "do" :)
 
-stdlibContent :: [String]
-stdlibContent = map BChar8.unpack [$(embedFile "./src/stdlib/core.sim")]
+stdlibContent :: String
+stdlibContent = unwords $ map BChar8.unpack [$(embedFile "./src/stdlib/core.sim")]
 
 loadLibrarysIntoScope :: Scope -> Either Error Scope
-loadLibrarysIntoScope scope = snd <$> (libraryAst >>= evaluateWithScope scope)
-  where
-    libraryAst =
-      tokenize $ unwords stdlibContent
+loadLibrarysIntoScope scope = snd <$> (tokenize stdlibContent >>= evaluateWithScope scope)
 
 evaluateWithStdlib :: Scope -> [Expression] -> Either Error (Atom, Scope)
 evaluateWithStdlib parentScope exprs = do

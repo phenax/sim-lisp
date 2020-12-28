@@ -14,7 +14,8 @@ data Atom
   | AtomInt Integer
   | AtomBool Bool
   | AtomList [Expression]
-  | AtomSymbol String
+  | AtomLabel String
+  | AtomSymbol Expression
   | AtomLambda [String] Expression
   deriving (Eq)
 
@@ -34,13 +35,16 @@ instance Show Atom where
   show (AtomInt n) = show n
   show (AtomString s) = "\"" ++ s ++ "\""
   show (AtomList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
-  show (AtomSymbol s) = s
+  show (AtomSymbol s) = show s
+  show (AtomLabel s) = s
   show (AtomBool b) = if b then "T" else "F"
   show (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"
 
 letPair :: Expression -> Either Error (String, Expression)
 letPair = \case
-  SymbolExpression [Atom (AtomSymbol s), expr] -> Right (s, expr)
+  SymbolExpression [Atom (AtomSymbol sym), expr] -> case sym of
+    Atom (AtomLabel label) -> Right (label, expr)
+    _ -> Left $ EvalError "Invalid `let` binding"
   _ -> Left $ EvalError "Invalid `let` binding"
 
 isSymbol :: Expression -> Bool
@@ -50,7 +54,7 @@ isSymbol = \case
 
 toSymbolString :: Expression -> Maybe String
 toSymbolString = \case
-  Atom (AtomSymbol s) -> Just s
+  Atom (AtomSymbol (Atom (AtomLabel s))) -> Just s
   _ -> Nothing
 
 mapInt :: (Integer -> Integer) -> Atom -> Atom
@@ -67,6 +71,8 @@ onlyBool :: Atom -> Either Error Atom
 onlyBool = \case
   AtomBool b -> Right $ AtomBool b
   _ -> Left $ EvalError "Invalid data type. Expected boolean"
+
+createLabel = Atom . AtomSymbol . Atom . AtomLabel
 
 --
 --

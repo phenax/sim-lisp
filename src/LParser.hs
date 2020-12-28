@@ -37,7 +37,7 @@ parseSymbolString :: Parsec String u String
 parseSymbolString = many1 $ alphaNum <|> oneOf ['+', '-', '*', '/', '<', '>', '=', '!', '%', '&', '.', '?', '@', '$', '_']
 
 symbolP :: Parsec String u Expression
-symbolP = Atom . AtomSymbol <$> parseSymbolString
+symbolP = createLabel <$> parseSymbolString
 
 booleanP :: Parsec String u Expression
 booleanP = Atom . AtomBool <$> ((True <$ string "T") <|> (False <$ string "F"))
@@ -46,7 +46,7 @@ atomP :: Parsec String u Expression
 atomP = withWhitespace (numberP <|> stringP <|> listP <|> booleanP <|> symbolP <?> "Syntax error")
 
 commentP :: Parsec String u Expression
-commentP = (\_ -> SymbolExpression [Atom (AtomSymbol "do")]) <$> (char ';' >> anyChar `manyTill` newline)
+commentP = (\_ -> SymbolExpression [createLabel "do"]) <$> (char ';' >> anyChar `manyTill` newline)
 
 sExpressionP = withWhitespace $ do
   char '('

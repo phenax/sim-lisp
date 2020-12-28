@@ -10,11 +10,15 @@
   - [X] Fix repl to maintain global scope
   - [X] `def` - Define macros
   - [X] Comments
+  - [X] Symbol String -> Symbol Expression
+  - [X] `quote`
+  - [ ] `eval`
+  - [ ] `quasiquote`, `unquote`
   - [ ] Meta stuff
+  - [ ] simple console io
   - [ ] Boolean helpers (`if`, `cond`, conditional combinators)
   - [ ] Make `=` work with any number of args
   - [ ] `import` - Import module
-  - [ ] `quote` - Symbols?
   - [ ] core stdlib
   - [ ] List
   - [ ] list stdlib

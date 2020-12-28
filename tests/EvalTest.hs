@@ -10,6 +10,10 @@ import LParser
 import Test.Hspec
 import Text.RawString.QQ
 
+label = Atom . AtomLabel
+
+symL = Atom . AtomSymbol . label
+
 evalExpressionTests = do
   let eval = evaluate <=< tokenize
    in describe "evalExpression" $ do
@@ -133,14 +137,14 @@ evalExpressionTests = do
                 )))
 
                (fact 5)
-              )"|]
+              |]
               `shouldBe` Right (AtomInt 120)
           it "should create a lambda atom" $ do
             eval "(lambda (x) (+ x 1))"
               `shouldBe` Right
                 ( AtomLambda
                     ["x"]
-                    ( SymbolExpression [Atom (AtomSymbol "+"), Atom (AtomSymbol "x"), Atom (AtomInt 1)]
+                    ( SymbolExpression [symL "+", symL "x", Atom (AtomInt 1)]
                     )
                 )
           it "should multiple lambdas" $ do
@@ -149,23 +153,29 @@ evalExpressionTests = do
                 (mul (lambda (x) (* x 5)))
                 (incr (lambda (x) (+ x 1)))
               ) (incr (mul 3)))
-              )"|]
+              |]
               `shouldBe` Right (AtomInt 16)
           it "should shadow any variables outside scope" $ do
             eval
               [r|(declare x 100)
                 (declare incr (lambda (x) (+ x 1)))
                 (incr 10)
-              )"|]
+              |]
               `shouldBe` Right (AtomInt 11)
           it "should create a lambda atom" $ do
             eval "(lambda (x) (+ x 1))"
               `shouldBe` Right
                 ( AtomLambda
                     ["x"]
-                    ( SymbolExpression [Atom (AtomSymbol "+"), Atom (AtomSymbol "x"), Atom (AtomInt 1)]
+                    ( SymbolExpression [symL "+", symL "x", Atom (AtomInt 1)]
                     )
                 )
+
+        describe "quote" $ do
+          it "should wrap the symbol" $ do
+            eval [r|(quote hello)|] `shouldBe` Right (AtomSymbol (symL "hello"))
+          it "should wrap the expression" $ do
+            eval [r|(quote (+ 5 2))|] `shouldBe` Right (AtomSymbol (SymbolExpression [symL "+", Atom (AtomInt 5), Atom (AtomInt 2)]))
 
         describe "def" $ do
           it "should do factorial with def expression" $ do
