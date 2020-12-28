@@ -10,10 +10,6 @@ import LParser
 import Test.Hspec
 import Text.RawString.QQ
 
-label = Atom . AtomLabel
-
-symL = Atom . AtomSymbol . label
-
 evalExpressionTests = do
   let eval = evaluate <=< tokenize
    in describe "evalExpression" $ do
@@ -144,7 +140,7 @@ evalExpressionTests = do
               `shouldBe` Right
                 ( AtomLambda
                     ["x"]
-                    ( SymbolExpression [symL "+", symL "x", Atom (AtomInt 1)]
+                    ( SymbolExpression [createLabel "+", createLabel "x", Atom (AtomInt 1)]
                     )
                 )
           it "should multiple lambdas" $ do
@@ -167,15 +163,26 @@ evalExpressionTests = do
               `shouldBe` Right
                 ( AtomLambda
                     ["x"]
-                    ( SymbolExpression [symL "+", symL "x", Atom (AtomInt 1)]
+                    ( SymbolExpression [createLabel "+", createLabel "x", Atom (AtomInt 1)]
                     )
                 )
 
         describe "quote" $ do
           it "should wrap the symbol" $ do
-            eval [r|(quote hello)|] `shouldBe` Right (AtomSymbol (symL "hello"))
+            eval [r|(quote hello)|] `shouldBe` Right (AtomSymbol (createLabel "hello"))
           it "should wrap the expression" $ do
-            eval [r|(quote (+ 5 2))|] `shouldBe` Right (AtomSymbol (SymbolExpression [symL "+", Atom (AtomInt 5), Atom (AtomInt 2)]))
+            eval [r|(quote (+ 5 2))|] `shouldBe` Right (AtomSymbol (SymbolExpression [createLabel "+", Atom (AtomInt 5), Atom (AtomInt 2)]))
+
+        describe "eval" $ do
+          it "should evaluate a quote" $ do
+            eval [r| (declare hello 6) (eval (quote (+ hello 5))) |] `shouldBe` Right (AtomInt 11)
+          it "should evaluate a quote" $ do
+            eval [r| (declare fir (quote (+ 20 5))) (eval (if T fir 5)) |] `shouldBe` Right (AtomInt 25)
+          it "should return error if not a quote" $ do
+            eval [r| (eval 100) |] `shouldBe` Left (EvalError "Invalid argument passed to `eval`")
+          it "should return error if no args or extra args" $ do
+            eval [r| (eval) |] `shouldBe` Left (EvalError "Invalid number of arguments to `eval`")
+            eval [r| (eval 10 20 30) |] `shouldBe` Left (EvalError "Invalid number of arguments to `eval`")
 
         describe "def" $ do
           it "should do factorial with def expression" $ do

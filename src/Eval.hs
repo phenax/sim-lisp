@@ -124,6 +124,15 @@ quoteE scope = \case
   [expr] -> Right (AtomSymbol expr, scope)
   _ -> Left $ EvalError "Invalid number of arguments to `quote`"
 
+evalE :: MacroEvaluator
+evalE scope = \case
+  [expr] -> do
+    expr <- evalExpressionPure scope expr
+    case expr of
+      AtomSymbol expr -> evalExpression scope expr
+      _ -> Left $ EvalError $ "Invalid argument passed to `eval`"
+  _ -> Left $ EvalError "Invalid number of arguments to `eval`"
+
 -- Evaluate expression without leaking scope
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
 evalExpressionPure scope = fmap fst . evalExpression scope
@@ -146,6 +155,7 @@ evalExpression scope = \case
     ">" -> compare2E [GT] scope lst
     ">=" -> compare2E [GT, EQ] scope lst
     "quote" -> quoteE scope lst
+    "eval" -> evalE scope lst
     "lambda" -> lambdaE scope lst
     "if" -> ifE scope lst
     "do" -> doblockE scope lst

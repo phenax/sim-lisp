@@ -12,9 +12,10 @@
   - [X] Comments
   - [X] Symbol String -> Symbol Expression
   - [X] `quote`
-  - [ ] `eval`
-  - [ ] `quasiquote`, `unquote`
+  - [X] `eval`
+  - [ ] Syntax for eval quote
   - [ ] Meta stuff
+  - [ ] `quasiquote`, `unquote`
   - [ ] simple console io
   - [ ] Boolean helpers (`if`, `cond`, conditional combinators)
   - [ ] Make `=` work with any number of args

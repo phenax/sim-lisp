@@ -8,8 +8,6 @@ import Test.Hspec
 import Text.Parsec
 import Text.RawString.QQ
 
-symL = Atom . AtomSymbol . Atom . AtomLabel
-
 valueParsers = do
   let parseValue = parse stringP "Str"
    in describe "stringP" $ do
@@ -31,37 +29,22 @@ valueParsers = do
         it "should get number till non digit character" $ do
           parseValue "918a2323" `shouldBe` Right ((Atom . AtomInt) 918)
 
-  let parseValue = parse listP "List"
-   in describe "listP" $ do
-        it "should parse simple list" $ do
-          parseValue "'( 1 2 4 6 \"abc\" )" `shouldBe` Right (Atom . AtomList $ [(Atom . AtomInt) 1, (Atom . AtomInt) 2, (Atom . AtomInt) 4, (Atom . AtomInt) 6, (Atom . AtomString) "abc"])
-        it "should parse list of expressions" $ do
-          parseValue "'( 1 (+ 5 2) 4 (/ 12 6) )"
-            `shouldBe` Right
-              ( Atom . AtomList $
-                  [ (Atom . AtomInt) 1,
-                    SymbolExpression [symL "+", (Atom . AtomInt) 5, (Atom . AtomInt) 2],
-                    (Atom . AtomInt) 4,
-                    SymbolExpression [symL "/", (Atom . AtomInt) 12, (Atom . AtomInt) 6]
-                  ]
-              )
-
   let parseValue = parse symbolP "Symbol"
    in describe "symbolP" $ do
         it "should parse words to symbol" $ do
-          parseValue "hello" `shouldBe` Right (symL "hello")
-          parseValue "world" `shouldBe` Right (symL "world")
-          parseValue "nice" `shouldBe` Right (symL "nice")
-          parseValue "Tit" `shouldBe` Right (symL "Tit")
-          parseValue "Fuck" `shouldBe` Right (symL "Fuck")
+          parseValue "hello" `shouldBe` Right (createLabel "hello")
+          parseValue "world" `shouldBe` Right (createLabel "world")
+          parseValue "nice" `shouldBe` Right (createLabel "nice")
+          parseValue "Tit" `shouldBe` Right (createLabel "Tit")
+          parseValue "Fuck" `shouldBe` Right (createLabel "Fuck")
         it "should allow numbers" $ do
-          parseValue "hello121world" `shouldBe` Right (symL "hello121world")
-          parseValue "121world" `shouldBe` Right (symL "121world")
+          parseValue "hello121world" `shouldBe` Right (createLabel "hello121world")
+          parseValue "121world" `shouldBe` Right (createLabel "121world")
         it "should allow special characters" $ do
-          parseValue "he+llo" `shouldBe` Right (symL "he+llo")
-          parseValue "wor-l*!!!d" `shouldBe` Right (symL "wor-l*!!!d")
-          parseValue "nice?" `shouldBe` Right (symL "nice?")
-          parseValue "+" `shouldBe` Right (symL "+")
+          parseValue "he+llo" `shouldBe` Right (createLabel "he+llo")
+          parseValue "wor-l*!!!d" `shouldBe` Right (createLabel "wor-l*!!!d")
+          parseValue "nice?" `shouldBe` Right (createLabel "nice?")
+          parseValue "+" `shouldBe` Right (createLabel "+")
 
   let parseValue = parse booleanP "Boolean"
    in describe "booleanP" $ do
@@ -77,25 +60,25 @@ expressionParsers = do
         it "should parse function call with one argument" $ do
           parseValue "\"hello world\"" `shouldBe` Right ((Atom . AtomString) "hello world")
         it "should parse function call with one argument" $ do
-          parseValue "(+ 1)" `shouldBe` Right (SymbolExpression [symL "+", (Atom . AtomInt) 1])
+          parseValue "(+ 1)" `shouldBe` Right (SymbolExpression [createLabel "+", (Atom . AtomInt) 1])
         it "should parse function call with multiple arguments" $ do
-          parseValue "(+ 1 2)" `shouldBe` Right (SymbolExpression [symL "+", (Atom . AtomInt) 1, (Atom . AtomInt) 2])
+          parseValue "(+ 1 2)" `shouldBe` Right (SymbolExpression [createLabel "+", (Atom . AtomInt) 1, (Atom . AtomInt) 2])
         it "should parse named function call" $ do
-          parseValue "(incrementBy 1 20)" `shouldBe` Right (SymbolExpression [symL "incrementBy", (Atom . AtomInt) 1, (Atom . AtomInt) 20])
+          parseValue "(incrementBy 1 20)" `shouldBe` Right (SymbolExpression [createLabel "incrementBy", (Atom . AtomInt) 1, (Atom . AtomInt) 20])
         it "should parse nested expressions" $ do
-          parseValue "(+ 1 (- 3 2))" `shouldBe` Right (SymbolExpression [symL "+", (Atom . AtomInt) 1, SymbolExpression [symL "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]])
+          parseValue "(+ 1 (- 3 2))" `shouldBe` Right (SymbolExpression [createLabel "+", (Atom . AtomInt) 1, SymbolExpression [createLabel "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]])
         it "should parse with any whitespace" $ do
-          parseValue " (\t+    1 (  \n  - 3  \t  2))" `shouldBe` Right (SymbolExpression [symL "+", (Atom . AtomInt) 1, SymbolExpression [symL "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]])
+          parseValue " (\t+    1 (  \n  - 3  \t  2))" `shouldBe` Right (SymbolExpression [createLabel "+", (Atom . AtomInt) 1, SymbolExpression [createLabel "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]])
         it "should parse booleans" $ do
-          parseValue "(fn T F)" `shouldBe` Right (SymbolExpression [symL "fn", Atom . AtomBool $ True, Atom . AtomBool $ False])
+          parseValue "(fn T F)" `shouldBe` Right (SymbolExpression [createLabel "fn", Atom . AtomBool $ True, Atom . AtomBool $ False])
 
   let parseValue = parse multipleExpressionsP "MultipleExpr"
    in describe "multipleExpressionsP" $ do
         it "should parse multiple expressions" $ do
           parseValue "(+ 1 (- 3 2)) (+ 3 (* 9 6) 5)"
             `shouldBe` Right
-              [ SymbolExpression [symL "+", (Atom . AtomInt) 1, SymbolExpression [symL "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]],
-                SymbolExpression [symL "+", (Atom . AtomInt) 3, SymbolExpression [symL "*", (Atom . AtomInt) 9, (Atom . AtomInt) 6], (Atom . AtomInt) 5]
+              [ SymbolExpression [createLabel "+", (Atom . AtomInt) 1, SymbolExpression [createLabel "-", (Atom . AtomInt) 3, (Atom . AtomInt) 2]],
+                SymbolExpression [createLabel "+", (Atom . AtomInt) 3, SymbolExpression [createLabel "*", (Atom . AtomInt) 9, (Atom . AtomInt) 6], (Atom . AtomInt) 5]
               ]
         it "should parse comments out" $ do
           parseValue
@@ -108,13 +91,13 @@ expressionParsers = do
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           |]
             `shouldBe` Right
-              [ SymbolExpression [symL "do"],
-                SymbolExpression [symL "declare", symL "x", Atom $ AtomInt 20],
-                SymbolExpression [symL "do"],
-                SymbolExpression [symL "declare", symL "y", Atom $ AtomInt 10],
-                SymbolExpression [symL "do"],
-                SymbolExpression [symL "do"],
-                SymbolExpression [symL "+", symL "x", symL "y"],
-                SymbolExpression [symL "do"],
-                SymbolExpression [symL "do"]
+              [ SymbolExpression [createLabel "do"],
+                SymbolExpression [createLabel "declare", createLabel "x", Atom $ AtomInt 20],
+                SymbolExpression [createLabel "do"],
+                SymbolExpression [createLabel "declare", createLabel "y", Atom $ AtomInt 10],
+                SymbolExpression [createLabel "do"],
+                SymbolExpression [createLabel "do"],
+                SymbolExpression [createLabel "+", createLabel "x", createLabel "y"],
+                SymbolExpression [createLabel "do"],
+                SymbolExpression [createLabel "do"]
               ]

@@ -13,7 +13,6 @@ data Atom
   = AtomString String
   | AtomInt Integer
   | AtomBool Bool
-  | AtomList [Expression]
   | AtomLabel String
   | AtomSymbol Expression
   | AtomLambda [String] Expression
@@ -22,7 +21,6 @@ data Atom
 compareAtom (AtomInt a) (AtomInt b) = compare a b
 compareAtom (AtomString a) (AtomString b) = compare a b
 compareAtom (AtomBool a) (AtomBool b) = compare a b
-compareAtom (AtomList a) (AtomList b) = compare (length a) (length b)
 compareAtom _ _ = LT
 
 --compare (AtomString s) = "\"" ++ s ++ "\""
@@ -34,7 +32,6 @@ compareAtom _ _ = LT
 instance Show Atom where
   show (AtomInt n) = show n
   show (AtomString s) = "\"" ++ s ++ "\""
-  show (AtomList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
   show (AtomSymbol s) = show s
   show (AtomLabel s) = s
   show (AtomBool b) = if b then "T" else "F"

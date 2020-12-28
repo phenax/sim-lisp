@@ -24,15 +24,6 @@ stringP = do
   char '"'
   Atom . AtomString <$> anyChar `manyTill` char '"'
 
-listP :: Parsec String u Expression
-listP = do
-  char '\''
-  char '('
-  whitespace
-  exprs <- (sExpressionP <|> atomP) `sepBy` whitespace
-  whitespace
-  return . Atom . AtomList $ exprs
-
 parseSymbolString :: Parsec String u String
 parseSymbolString = many1 $ alphaNum <|> oneOf ['+', '-', '*', '/', '<', '>', '=', '!', '%', '&', '.', '?', '@', '$', '_']
 
@@ -43,7 +34,7 @@ booleanP :: Parsec String u Expression
 booleanP = Atom . AtomBool <$> ((True <$ string "T") <|> (False <$ string "F"))
 
 atomP :: Parsec String u Expression
-atomP = withWhitespace (numberP <|> stringP <|> listP <|> booleanP <|> symbolP <?> "Syntax error")
+atomP = withWhitespace (numberP <|> stringP <|> booleanP <|> symbolP <?> "Syntax error")
 
 commentP :: Parsec String u Expression
 commentP = (\_ -> SymbolExpression [createLabel "do"]) <$> (char ';' >> anyChar `manyTill` newline)
