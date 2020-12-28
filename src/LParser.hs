@@ -33,6 +33,9 @@ symbolP = createLabel <$> parseSymbolString
 booleanP :: Parsec String u Expression
 booleanP = Atom . AtomBool <$> ((True <$ string "T") <|> (False <$ string "F"))
 
+--nilP :: Parsec String u Expression
+--nilP = const (Atom . AtomNil) <$> string "nil"
+
 atomP :: Parsec String u Expression
 atomP = withWhitespace (numberP <|> stringP <|> booleanP <|> symbolP <?> "Syntax error")
 

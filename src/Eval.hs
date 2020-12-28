@@ -133,6 +133,26 @@ evalE scope = \case
       _ -> Left $ EvalError $ "Invalid argument passed to `eval`"
   _ -> Left $ EvalError "Invalid number of arguments to `eval`"
 
+carE :: MacroEvaluator
+carE scope = \case
+  [expr] -> do
+    expr <- evalExpressionPure scope expr
+    case expr of
+      AtomSymbol (SymbolExpression []) -> Right (AtomNil, scope)
+      AtomSymbol (SymbolExpression (h : _lst)) -> evalExpression scope h
+      _ -> Left $ EvalError "Invalid argument passed to `car`"
+  _ -> Left $ EvalError "Invalid number of arguments passed to `car`"
+
+cdrE :: MacroEvaluator
+cdrE scope = \case
+  [expr] -> do
+    expr <- evalExpressionPure scope expr
+    case expr of
+      AtomSymbol (SymbolExpression []) -> Right (AtomNil, scope)
+      AtomSymbol (SymbolExpression (_h : lst)) -> Right (AtomSymbol $ SymbolExpression lst, scope)
+      _ -> Left $ EvalError "Invalid argument passed to `cdr`"
+  _ -> Left $ EvalError "Invalid number of arguments passed to `cdr`"
+
 -- Evaluate expression without leaking scope
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
 evalExpressionPure scope = fmap fst . evalExpression scope
@@ -157,6 +177,8 @@ evalExpression scope = \case
     "quote" -> quoteE scope lst
     "eval" -> evalE scope lst
     "lambda" -> lambdaE scope lst
+    "car" -> carE scope lst
+    "cdr" -> cdrE scope lst
     "if" -> ifE scope lst
     "do" -> doblockE scope lst
     "declare" -> declareE scope lst

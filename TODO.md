@@ -13,15 +13,17 @@
   - [X] Symbol String -> Symbol Expression
   - [X] `quote`
   - [X] `eval`
+  - [X] List ops - `car`, `cdr`
   - [ ] Syntax for eval quote
   - [ ] Meta stuff
   - [ ] `quasiquote`, `unquote`
   - [ ] simple console io
+  - [ ] Generalize errors
+  - [ ] Error line numbers
   - [ ] Boolean helpers (`if`, `cond`, conditional combinators)
   - [ ] Make `=` work with any number of args
   - [ ] `import` - Import module
   - [ ] core stdlib
-  - [ ] List
   - [ ] list stdlib
   - [ ] String
   - [ ] string stdlib

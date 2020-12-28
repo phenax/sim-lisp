@@ -184,6 +184,29 @@ evalExpressionTests = do
             eval [r| (eval) |] `shouldBe` Left (EvalError "Invalid number of arguments to `eval`")
             eval [r| (eval 10 20 30) |] `shouldBe` Left (EvalError "Invalid number of arguments to `eval`")
 
+        describe "car" $ do
+          it "should return first item" $ do
+            eval [r| (declare hello (quote (5 4 3 2 1))) (car hello) |] `shouldBe` Right (AtomInt 5)
+          it "should return nil for empty list" $ do
+            eval [r| (declare hello (quote ())) (car hello) |] `shouldBe` Right AtomNil
+          it "should throw error for non-list args" $ do
+            eval [r| (car 121212) |] `shouldBe` Left (EvalError "Invalid argument passed to `car`")
+          it "should throw error for wrong number of args" $ do
+            eval [r| (car 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `car`")
+            eval [r| (car) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `car`")
+
+        describe "car" $ do
+          it "should return first item" $ do
+            eval [r| (declare hello (quote (5 4 3 2 1))) (cdr hello) |]
+              `shouldBe` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
+          it "should return nil for empty list" $ do
+            eval [r| (declare hello (quote ())) (cdr hello) |] `shouldBe` Right AtomNil
+          it "should throw error for non-list args" $ do
+            eval [r| (cdr 121212) |] `shouldBe` Left (EvalError "Invalid argument passed to `cdr`")
+          it "should throw error for wrong number of args" $ do
+            eval [r| (cdr 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cdr`")
+            eval [r| (cdr) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cdr`")
+
         describe "def" $ do
           it "should do factorial with def expression" $ do
             eval

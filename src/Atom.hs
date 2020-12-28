@@ -10,12 +10,13 @@ data Expression
   deriving (Eq, Show)
 
 data Atom
-  = AtomString String
+  = AtomNil
   | AtomInt Integer
   | AtomBool Bool
   | AtomLabel String
   | AtomSymbol Expression
   | AtomLambda [String] Expression
+  | AtomString String
   deriving (Eq)
 
 compareAtom (AtomInt a) (AtomInt b) = compare a b
@@ -31,6 +32,7 @@ compareAtom _ _ = LT
 
 instance Show Atom where
   show (AtomInt n) = show n
+  show AtomNil = "nil"
   show (AtomString s) = "\"" ++ s ++ "\""
   show (AtomSymbol s) = show s
   show (AtomLabel s) = s
