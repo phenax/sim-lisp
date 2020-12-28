@@ -14,6 +14,8 @@
   - [X] `quote`
   - [X] `eval`
   - [X] List ops - `car`, `cdr`, `cons`
+  - [ ] list stdlib
+  - [ ] Allow predefined functions to be overridden
   - [ ] Syntax for eval quote
   - [ ] Meta stuff
   - [ ] `quasiquote`, `unquote`
@@ -24,6 +26,5 @@
   - [ ] Make `=` work with any number of args
   - [ ] `import` - Import module
   - [ ] core stdlib
-  - [ ] list stdlib
   - [ ] String
   - [ ] string stdlib

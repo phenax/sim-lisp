@@ -102,6 +102,7 @@ ifE scope = \case
   [exp1, thenBody, elseBody] ->
     let isTruthy = \case
           AtomBool x -> x
+          AtomNil -> False
           _ -> True
      in do
           condAtom <- evalExpressionPure scope exp1
@@ -121,6 +122,7 @@ compare2E ordering scope = \case
 
 quoteE :: MacroEvaluator
 quoteE scope = \case
+  [SymbolExpression []] -> Right (AtomNil, scope)
   [expr] -> Right (AtomSymbol expr, scope)
   _ -> Left $ EvalError "Invalid number of arguments to `quote`"
 
@@ -138,6 +140,7 @@ carE scope = \case
   [expr] -> do
     expr <- evalExpressionPure scope expr
     case expr of
+      AtomNil -> Right (AtomNil, scope)
       AtomSymbol (SymbolExpression []) -> Right (AtomNil, scope)
       AtomSymbol (SymbolExpression (h : _lst)) -> evalExpression scope h
       _ -> Left $ EvalError "Invalid argument passed to `car`"
@@ -148,7 +151,9 @@ cdrE scope = \case
   [expr] -> do
     expr <- evalExpressionPure scope expr
     case expr of
+      AtomNil -> Right (AtomNil, scope)
       AtomSymbol (SymbolExpression []) -> Right (AtomNil, scope)
+      AtomSymbol (SymbolExpression [_h]) -> Right (AtomNil, scope)
       AtomSymbol (SymbolExpression (_h : lst)) -> Right (AtomSymbol $ SymbolExpression lst, scope)
       _ -> Left $ EvalError "Invalid argument passed to `cdr`"
   _ -> Left $ EvalError "Invalid number of arguments passed to `cdr`"
@@ -159,6 +164,7 @@ consE scope = \case
     a <- evalExpressionPure scope expr1
     b <- evalExpressionPure scope expr2
     case b of
+      AtomNil -> Right $ (AtomSymbol $ SymbolExpression [Atom a], scope)
       AtomSymbol (SymbolExpression ls) -> Right $ (AtomSymbol $ SymbolExpression $ Atom a : ls, scope)
       _ -> Left $ EvalError "Invalid argument passed to `cons`"
   _ -> Left $ EvalError "Invalid number of arguments passed to `cons`"

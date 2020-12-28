@@ -1,3 +1,12 @@
 
 (def null? (ls) (= Nil ls))
 
+(def length (ls)
+  (if (null? ls) 0 (+ 1 (length (cdr ls)))))
+
+(def foldl (fn init ls)
+  (if (null? ls)
+    init
+    (fn (foldl fn init (cdr ls)) (car ls))
+  ))
+

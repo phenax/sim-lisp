@@ -1,7 +1,11 @@
 
-;; T
-(null? (quote (1 2 3 4 5)))
+(declare ls (quote (1 2 3 4 5 6)))
 
-;; F
-(null? (quote ()))
+; 6
+(length ls)
+
+(def add (a b) (+ a b))
+
+; 21
+(foldl add 0 ls)
 

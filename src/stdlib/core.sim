@@ -1,9 +1,7 @@
 (declare stdlib-loaded? T)
 
-(def eq? (a b) (= a b))
-
 (def not (a) (if a F T))
 
-(def and (a b) (if a a b))
-(def or (a b) (if a b a))
+(def and (a b) (if a b F))
+(def or (a b) (if a T b))
 
