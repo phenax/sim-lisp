@@ -36,6 +36,7 @@ stdlibTests = do
             eval "(not 50)" `shouldBe` Right (AtomBool False)
             eval "(not 0)" `shouldBe` Right (AtomBool False)
             eval "(not \"hellow\")" `shouldBe` Right (AtomBool False)
+
         describe "list#null?" $ do
           it "should return false for list with any number of items" $ do
             eval "(null? (quote (1 2 3 4 5)))" `shouldBe` Right (AtomBool False)

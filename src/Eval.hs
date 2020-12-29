@@ -9,7 +9,9 @@ import Atom
 import Control.Monad
 import qualified Data.ByteString.Char8 as BChar8
 import Data.FileEmbed
+import Data.List
 import qualified Data.Map as Map
+import Debug.Trace
 import Errors
 import LParser
 import Utils
@@ -23,8 +25,8 @@ emptyScope = Map.empty
 evalConcat :: Scope -> [Expression] -> Either Error [(Atom, Scope)]
 evalConcat scope = mergeM . map (evalExpression scope)
 
-foldInts :: Scope -> (Integer -> Integer -> Integer) -> Integer -> [Expression] -> Either Error (Atom, Scope)
-foldInts scope fn init = folder scope <=< evalConcat scope
+foldIntsE :: (Integer -> Integer -> Integer) -> Integer -> Scope -> [Expression] -> Either Error (Atom, Scope)
+foldIntsE fn init scope = folder scope <=< evalConcat scope
   where
     folder :: Scope -> [(Atom, Scope)] -> Either Error (Atom, Scope)
     folder scope = \case
@@ -77,19 +79,6 @@ letbindingE scope = \case
     let newScope = paramMap `Map.union` scope
      in evalExpression newScope expression
   _ -> Left $ EvalError "Invalid `let` expression"
-
-customMacroE :: String -> MacroEvaluator
-customMacroE fn scope = \case
-  arguments ->
-    let lambda = case Map.lookup fn scope of
-          Just (AtomLambda params body) -> Right (params, body)
-          _ -> Left $ EvalError ("Invalid call. `" ++ fn ++ "` is not a macro")
-        toScope params = (`Map.union` scope) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
-     in do
-          (params, body) <- lambda
-          newScope <- toScope params
-          (result, _) <- evalExpression newScope body
-          return (result, scope)
 
 -- TODO: Implement after io setup
 importE :: MacroEvaluator
@@ -169,6 +158,48 @@ consE scope = \case
       _ -> Left $ EvalError "Invalid argument passed to `cons`"
   _ -> Left $ EvalError "Invalid number of arguments passed to `cons`"
 
+builtins =
+  [ ("+", foldIntsE (+) 0),
+    ("-", foldIntsE (-) 0),
+    ("*", foldIntsE (*) 1),
+    ("/", foldIntsE div 1),
+    ("=", compare2E [EQ]),
+    ("<", compare2E [LT]),
+    ("<=", compare2E [LT, EQ]),
+    (">", compare2E [GT]),
+    (">=", compare2E [GT, EQ]),
+    ("quote", quoteE),
+    ("eval", evalE),
+    ("lambda", lambdaE),
+    ("cons", consE),
+    ("car", carE),
+    ("cdr", cdrE),
+    ("if", ifE),
+    ("do", doblockE),
+    ("declare", declareE),
+    ("def", defineFunctionE),
+    ("let", letbindingE),
+    ("import", importE)
+  ]
+
+-- First class +
+-- -
+
+applyLambda fn arguments scope = case Map.lookup fn scope of
+  Just (AtomLambda params body) -> do
+    newScope <- toScope params
+    result <- evalExpressionPure newScope body
+    return (result, scope)
+  _ -> Left $ EvalError ("Invalid call. `" ++ fn ++ "` is not a macro")
+  where
+    toScope params = (`Map.union` scope) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
+
+applyBuiltin fn arguments scope =
+  maybe (applyLambda fn arguments scope) ((\fn -> fn scope arguments) . snd) (find ((==) fn . fst) builtins)
+
+applyE :: String -> MacroEvaluator
+applyE fn scope arguments = applyLambda fn arguments scope <|> applyBuiltin fn arguments scope
+
 -- Evaluate expression without leaking scope
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
 evalExpressionPure scope = fmap fst . evalExpression scope
@@ -180,29 +211,9 @@ evalExpression scope = \case
       Just value -> Right (value, scope)
       Nothing -> Left $ EvalError $ "Variable " ++ k ++ " not found in scope"
     a -> Right (a, scope)
-  SymbolExpression (Atom (AtomSymbol (Atom (AtomLabel op))) : lst) -> case op of
-    "+" -> foldInts scope (+) 0 lst
-    "-" -> foldInts scope (-) 0 lst
-    "*" -> foldInts scope (*) 1 lst
-    "/" -> foldInts scope div 1 lst
-    "=" -> compare2E [EQ] scope lst
-    "<" -> compare2E [LT] scope lst
-    "<=" -> compare2E [LT, EQ] scope lst
-    ">" -> compare2E [GT] scope lst
-    ">=" -> compare2E [GT, EQ] scope lst
-    "quote" -> quoteE scope lst
-    "eval" -> evalE scope lst
-    "lambda" -> lambdaE scope lst
-    "cons" -> consE scope lst
-    "car" -> carE scope lst
-    "cdr" -> cdrE scope lst
-    "if" -> ifE scope lst
-    "do" -> doblockE scope lst
-    "declare" -> declareE scope lst
-    "def" -> defineFunctionE scope lst
-    "let" -> letbindingE scope lst
-    "import" -> importE scope lst
-    fn -> customMacroE fn scope lst
+  SymbolExpression (operation : lst) -> case operation of
+    Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> applyE opSymbol scope lst
+    _ -> Left $ EvalError "TODO: Not impl"
   _ -> Left $ EvalError "TODO: Not impl out"
 
 evaluateWithScope :: Scope -> [Expression] -> Either Error (Atom, Scope)

@@ -5,7 +5,8 @@
 (length ls)
 
 (def add (a b) (+ a b))
+(def minus (a b) (- a b))
 
 ; 21
-(foldl add 0 ls)
+(foldl minus 100 ls)
 

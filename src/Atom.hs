@@ -75,5 +75,3 @@ onlyBool = \case
 createLabel = Atom . AtomSymbol . Atom . AtomLabel
 
 --
---
---

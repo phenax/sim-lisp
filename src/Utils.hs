@@ -2,6 +2,7 @@
 
 module Utils where
 
+import Debug.Trace
 import Errors
 
 mapFst fn (a, b) = (fn a, b)
@@ -31,3 +32,8 @@ toEither :: Maybe a -> Either Error a
 toEither = \case
   Just x -> Right x
   Nothing -> Left $ EvalError "Invalid syntax"
+
+(<|>) :: Either e a -> Either e a -> Either e a
+(<|>) a b = case a of
+  Left _ -> b
+  x -> x

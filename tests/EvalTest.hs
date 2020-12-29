@@ -58,6 +58,10 @@ evalExpressionTests = do
             eval [r|(= "1-1" "1-1")|] `shouldBe` Right (AtomBool True)
             eval [r|(= "1-0" "1-1")|] `shouldBe` Right (AtomBool False)
 
+        describe "stdlib loaded" $ do
+          it "should be identity for single args" $ do
+            eval "stdlib-loaded?" `shouldBe` Right (AtomBool True)
+
         describe "do" $ do
           it "should return last expression from block" $ do
             eval
@@ -195,8 +199,8 @@ evalExpressionTests = do
             eval [r| (car 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `car`")
             eval [r| (car) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `car`")
 
-        describe "car" $ do
-          it "should return first item" $ do
+        describe "cdr" $ do
+          it "should return rest of the list" $ do
             eval [r| (declare hello (quote (5 4 3 2 1))) (cdr hello) |]
               `shouldBe` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
           it "should return nil for empty list" $ do
@@ -207,7 +211,7 @@ evalExpressionTests = do
             eval [r| (cdr 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cdr`")
             eval [r| (cdr) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cdr`")
 
-        describe "car" $ do
+        describe "cons" $ do
           it "should prepend item to list" $ do
             eval [r|(cons 5 (quote (4 3 2 1))) |]
               `shouldBe` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5), Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
@@ -231,9 +235,5 @@ evalExpressionTests = do
                (fact 5)
               )"|]
               `shouldBe` Right (AtomInt 120)
-
-        describe "stdlib loaded" $ do
-          it "should be identity for single args" $ do
-            eval "stdlib-loaded?" `shouldBe` Right (AtomBool True)
 
 --
