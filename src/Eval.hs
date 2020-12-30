@@ -186,16 +186,20 @@ builtins =
 -- First class +
 -- -
 
+applyLambda :: [String] -> Expression -> MacroEvaluator
+applyLambda params body scope arguments = do
+  newScope <- toScope params
+  result <- evalExpressionPure newScope body
+  return (result, scope)
+  where
+    toScope params = (`Map.union` scope) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
+
 applyAsSymbol :: String -> Scope -> [Expression] -> Maybe (Either Error (Atom, Scope))
 applyAsSymbol fn scope arguments = evaluateValue <$> Map.lookup fn scope
   where
     evaluateValue = \case
-      AtomLambda params body -> do
-        newScope <- toScope params
-        result <- evalExpressionPure newScope body
-        return (result, scope)
+      AtomLambda params body -> applyLambda params body scope arguments
       _ -> Left $ EvalError ("Invalid call. `" ++ fn ++ "` is not a macro")
-    toScope params = (`Map.union` scope) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
 
 applyBuiltin :: String -> Scope -> [Expression] -> Maybe (Either Error (Atom, Scope))
 applyBuiltin fn scope arguments =
@@ -207,10 +211,6 @@ applyE fn scope arguments = flatten $ applyAsSymbol fn scope arguments <|> apply
     flatten = \case
       Just e -> e
       Nothing -> Left $ EvalError ("Not found boeey:: " ++ fn)
-
--- Symbol: Maybe Either        - Not found symbol ( Invalid )
--- Builtin: Maybe Either       - Not found builtin ( Invalid )
--- Sym->Builtin: Symbol | Builtin :: Maybe Either   -
 
 -- Evaluate expression without leaking scope
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
@@ -224,12 +224,14 @@ evalExpression scope = \case
       Nothing -> Left $ EvalError $ "Variable " ++ k ++ " not found in scope"
     a -> Right (a, scope)
   SymbolExpression (operation : lst) -> case operation of
-    -- symbol -> String (can be resolved to expression)
-    -- predefined function -> String
-    -- predefined function as symbol -> String
+    -- TODO: predefined function as symbol
     Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> applyE opSymbol scope lst
     -- inline lambda -> Expression
-    -- Atom (AtomLambda params body) -> applyE (Atom (AtomLambda params body)) scope lst
+    SymbolExpression exprs -> do
+      atom <- evalExpressionPure scope (SymbolExpression exprs)
+      case atom of
+        AtomLambda params body -> applyLambda params body scope lst
+        _ -> Left $ EvalError "Invalid syntax"
     _ -> Left $ EvalError "TODO: Not impl 1"
   _ -> Left $ EvalError "TODO: Not impl out"
 

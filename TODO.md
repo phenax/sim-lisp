@@ -14,8 +14,8 @@
   - [X] `quote`
   - [X] `eval`
   - [X] List ops - `car`, `cdr`, `cons`
-  - [ ] Inline lambda
-  - [ ] Allow predefined functions to be overridden
+  - [X] Inline lambda
+  - [X] Allow predefined functions to be overridden
   - [ ] list stdlib
   - [ ] Syntax for eval, quote
   - [ ] Predefined functions for type checking

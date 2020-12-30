@@ -130,8 +130,8 @@ evalExpressionTests = do
         describe "lambda" $ do
           it "should save lambda in scope and call it" $ do
             eval "(let ((incr (lambda (x) (+ x 1)))) (incr 5) )" `shouldBe` Right (AtomInt 6)
-          xit "should allow inline lambda functions" $ do
-            eval "((lambda (x) (+ x 1)) 10)" `shouldBe` Right (AtomInt 6)
+          it "should allow inline lambda functions" $ do
+            eval "((lambda (x) (+ x 1)) 10)" `shouldBe` Right (AtomInt 11)
           it "should do factorial" $ do
             eval
               [r|(declare fact (lambda (x) (
