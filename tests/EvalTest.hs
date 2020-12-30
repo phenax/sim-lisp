@@ -59,6 +59,28 @@ evalExpressionTests = do
             eval [r|(< "1-0" "1-1")|] `shouldBe` Right (AtomBool True)
             eval [r|(= "1-1" "1-1")|] `shouldBe` Right (AtomBool True)
             eval [r|(= "1-0" "1-1")|] `shouldBe` Right (AtomBool False)
+          it "should return T for all numbers, F for others" $ do
+            eval "(number? 20)" `shouldBe` Right (AtomBool True)
+            eval "(number? (* 2 3))" `shouldBe` Right (AtomBool True)
+            eval "(number? 0)" `shouldBe` Right (AtomBool True)
+            eval "(declare var 20) (number? var)" `shouldBe` Right (AtomBool True)
+            eval "(declare var F) (number? var)" `shouldBe` Right (AtomBool False)
+            eval "(number? T)" `shouldBe` Right (AtomBool False)
+            eval "(number? Nil)" `shouldBe` Right (AtomBool False)
+            eval "(number? (lambda (x) (+ 5 x)))" `shouldBe` Right (AtomBool False)
+            eval "(number? \"hello\")" `shouldBe` Right (AtomBool False)
+          it "should return T for all booleans, F for others" $ do
+            eval "(declare var F) (boolean? var)" `shouldBe` Right (AtomBool True)
+            eval "(boolean? T)" `shouldBe` Right (AtomBool True)
+            eval "(boolean? Nil)" `shouldBe` Right (AtomBool True)
+            eval "(boolean? (or T F))" `shouldBe` Right (AtomBool True)
+            eval "(boolean? (not T))" `shouldBe` Right (AtomBool True)
+            eval "(boolean? 20)" `shouldBe` Right (AtomBool False)
+            eval "(boolean? (* 2 3))" `shouldBe` Right (AtomBool False)
+            eval "(boolean? 0)" `shouldBe` Right (AtomBool False)
+            eval "(declare var 20) (boolean? var)" `shouldBe` Right (AtomBool False)
+            eval "(boolean? (lambda (x) (+ 5 x)))" `shouldBe` Right (AtomBool False)
+            eval "(boolean? \"hello\")" `shouldBe` Right (AtomBool False)
 
         describe "stdlib loaded" $ do
           it "should be identity for single args" $ do

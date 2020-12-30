@@ -19,6 +19,8 @@ import Utils
 
 type Scope = Map.Map String Atom
 
+emptyScope = Map.empty
+
 type MacroEvaluator = Scope -> [Expression] -> Either Error (Atom, Scope)
 
 stdlibContent :: String
@@ -51,10 +53,26 @@ builtins =
     ("declare", declareE),
     ("def", defineFunctionE),
     ("let", letbindingE),
+    ("number?", isNumberE),
+    ("boolean?", isBooleanE),
     ("import", importE)
   ]
 
-emptyScope = Map.empty
+typeCheck :: (Atom -> Bool) -> MacroEvaluator
+typeCheck check scope = \case
+  (head : _) -> do
+    result <- evalExpressionPure scope head
+    return (AtomBool (check result), scope)
+  _ -> Right (AtomBool False, scope)
+
+isBooleanE = typeCheck $ \case
+  AtomBool _ -> True
+  AtomNil -> True
+  _ -> False
+
+isNumberE = typeCheck $ \case
+  AtomInt _ -> True
+  _ -> False
 
 evalConcat :: Scope -> [Expression] -> Either Error [(Atom, Scope)]
 evalConcat scope = mergeM . map (evalExpression scope)

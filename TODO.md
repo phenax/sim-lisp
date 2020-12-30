@@ -16,17 +16,19 @@
   - [X] List ops - `car`, `cdr`, `cons`
   - [X] Inline lambda
   - [X] Allow predefined functions to be overridden
-  - [ ] list stdlib
+  - [X] functions for type checking
+  - [ ] simple console io
+  - [ ] Ignore comments instead of making them nil
+  - [ ] Variable number of args
   - [ ] Syntax for eval, quote
-  - [ ] Predefined functions for type checking
   - [ ] Meta stuff
   - [ ] `quasiquote`, `unquote`
-  - [ ] simple console io
   - [ ] Generalize errors
   - [ ] Error line numbers
   - [ ] Boolean helpers (`if`, `cond`, conditional combinators)
   - [ ] Make `=` work with any number of args
   - [ ] `import` - Import module
+  - [ ] Allow negative and floats numbers
   - [ ] core stdlib
-  - [ ] String
+  - [ ] list stdlib
   - [ ] string stdlib
