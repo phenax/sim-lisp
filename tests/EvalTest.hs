@@ -35,6 +35,8 @@ evalExpressionTests = do
         it "should emit eval error for invalid types" $ do
           eval "(+ 10 \"fucking hell\" 5)" `shouldBe` Left (EvalError "Invalid set of params")
           eval "(+ 10 (+ 12 \"1\"))" `shouldBe` Left (EvalError "Invalid set of params")
+        it "should allow overriding default operators" $ do
+          eval "(def + (a b) (* a b)) (+ 5 3)" `shouldBe` Right (AtomInt 15)
 
         describe "bool operations" $ do
           it "should compare numbers correctly" $ do
@@ -128,6 +130,8 @@ evalExpressionTests = do
         describe "lambda" $ do
           it "should save lambda in scope and call it" $ do
             eval "(let ((incr (lambda (x) (+ x 1)))) (incr 5) )" `shouldBe` Right (AtomInt 6)
+          xit "should allow inline lambda functions" $ do
+            eval "((lambda (x) (+ x 1)) 10)" `shouldBe` Right (AtomInt 6)
           it "should do factorial" $ do
             eval
               [r|(declare fact (lambda (x) (
