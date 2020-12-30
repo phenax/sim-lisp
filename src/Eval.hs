@@ -21,6 +21,39 @@ type Scope = Map.Map String Atom
 
 type MacroEvaluator = Scope -> [Expression] -> Either Error (Atom, Scope)
 
+stdlibContent :: String
+stdlibContent =
+  unwords $
+    map
+      BChar8.unpack
+      [ $(embedFile "./src/stdlib/core.sim"),
+        $(embedFile "./src/stdlib/list.sim")
+      ]
+
+builtins =
+  [ ("+", foldIntsE (+) 0),
+    ("-", foldIntsE (-) 0),
+    ("*", foldIntsE (*) 1),
+    ("/", foldIntsE div 1),
+    ("=", compare2E [EQ]),
+    ("<", compare2E [LT]),
+    ("<=", compare2E [LT, EQ]),
+    (">", compare2E [GT]),
+    (">=", compare2E [GT, EQ]),
+    ("quote", quoteE),
+    ("eval", evalE),
+    ("lambda", lambdaE),
+    ("cons", consE),
+    ("car", carE),
+    ("cdr", cdrE),
+    ("if", ifE),
+    ("do", doblockE),
+    ("declare", declareE),
+    ("def", defineFunctionE),
+    ("let", letbindingE),
+    ("import", importE)
+  ]
+
 emptyScope = Map.empty
 
 evalConcat :: Scope -> [Expression] -> Either Error [(Atom, Scope)]
@@ -159,33 +192,6 @@ consE scope = \case
       _ -> Left $ EvalError "Invalid argument passed to `cons`"
   _ -> Left $ EvalError "Invalid number of arguments passed to `cons`"
 
-builtins =
-  [ ("+", foldIntsE (+) 0),
-    ("-", foldIntsE (-) 0),
-    ("*", foldIntsE (*) 1),
-    ("/", foldIntsE div 1),
-    ("=", compare2E [EQ]),
-    ("<", compare2E [LT]),
-    ("<=", compare2E [LT, EQ]),
-    (">", compare2E [GT]),
-    (">=", compare2E [GT, EQ]),
-    ("quote", quoteE),
-    ("eval", evalE),
-    ("lambda", lambdaE),
-    ("cons", consE),
-    ("car", carE),
-    ("cdr", cdrE),
-    ("if", ifE),
-    ("do", doblockE),
-    ("declare", declareE),
-    ("def", defineFunctionE),
-    ("let", letbindingE),
-    ("import", importE)
-  ]
-
--- First class +
--- -
-
 applyLambda :: [String] -> Expression -> MacroEvaluator
 applyLambda params body scope arguments = do
   newScope <- toScope params
@@ -216,6 +222,7 @@ applyE fn scope arguments = flatten $ applyAsSymbol fn scope arguments <|> apply
 evalExpressionPure :: Scope -> Expression -> Either Error Atom
 evalExpressionPure scope = fmap fst . evalExpression scope
 
+-- Evaluate expression with leaked scope
 evalExpression :: Scope -> Expression -> Either Error (Atom, Scope)
 evalExpression scope = \case
   Atom atom -> case atom of
@@ -226,7 +233,6 @@ evalExpression scope = \case
   SymbolExpression (operation : lst) -> case operation of
     -- TODO: predefined function as symbol
     Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> applyE opSymbol scope lst
-    -- inline lambda -> Expression
     SymbolExpression exprs -> do
       atom <- evalExpressionPure scope (SymbolExpression exprs)
       case atom of
@@ -237,15 +243,6 @@ evalExpression scope = \case
 
 evaluateWithScope :: Scope -> [Expression] -> Either Error (Atom, Scope)
 evaluateWithScope scope = evalExpression scope . SymbolExpression . (createLabel "do" :)
-
-stdlibContent :: String
-stdlibContent =
-  unwords $
-    map
-      BChar8.unpack
-      [ $(embedFile "./src/stdlib/core.sim"),
-        $(embedFile "./src/stdlib/list.sim")
-      ]
 
 loadLibrarysIntoScope :: Scope -> Either Error Scope
 loadLibrarysIntoScope scope = snd <$> (tokenize stdlibContent >>= evaluateWithScope scope)
