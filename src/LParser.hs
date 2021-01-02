@@ -54,6 +54,6 @@ expressionP = withWhitespace $ sExpressionP <|> atomP <|> commentP
 
 multipleExpressionsP = withWhitespace $ expressionP `sepBy` whitespace
 
-tokenize = withParseErr . parse multipleExpressionsP "LithParserError"
+tokenize = withParseErr . parse multipleExpressionsP "ParserError"
 
 --

@@ -5,17 +5,15 @@ let
 
   haskellDeps = ps: with ps; [
     base
-    parsec1
   ];
 
   ghc = haskellPackages.ghcWithPackages haskellDeps;
 
   nixPackages = [
-    ghc
-    pkgs.gdb
+    #pkgs.ghc
+    haskellPackages.haskell-language-server
     haskellPackages.cabal-install
-    # Dev
-    pkgs.entr
+    pkgs.entr # Re-run on file change
   ];
 in pkgs.stdenv.mkDerivation {
   name = "env";

@@ -2,6 +2,7 @@
 
 module Utils where
 
+import Atom
 import Debug.Trace
 import Errors
 
@@ -25,10 +26,10 @@ innerConcatPair list item = do
 mergeM :: Monad f => [f a] -> f [a]
 mergeM = foldl innerConcat (return [])
 
-flattenPairBySnd :: [(k, Either e a)] -> Either e [(k, a)]
-flattenPairBySnd = foldl innerConcatPair (Right [])
+flattenPairBySnd :: [(k, ExceptWithEvalError a)] -> ExceptWithEvalError [(k, a)]
+flattenPairBySnd = foldl innerConcatPair (pure [])
 
-toEither :: Maybe a -> Either Error a
+toEither :: Maybe a -> ExceptWithEvalError a
 toEither = \case
-  Just x -> Right x
-  Nothing -> Left $ EvalError "Invalid syntax"
+  Just x -> pure x
+  Nothing -> withErr $ EvalError "Invalid syntax"

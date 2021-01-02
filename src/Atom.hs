@@ -2,6 +2,7 @@
 
 module Atom where
 
+import Control.Monad.Trans.Except
 import Errors
 
 data Expression
@@ -40,12 +41,16 @@ instance Show Atom where
   show (AtomBool b) = if b then "T" else "F"
   show (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"
 
-letPair :: Expression -> Either Error (String, Expression)
+type ExceptWithEvalError = ExceptT Error IO
+
+withErr = except . Left
+
+letPair :: Expression -> ExceptWithEvalError (String, Expression)
 letPair = \case
   SymbolExpression [Atom (AtomSymbol sym), expr] -> case sym of
-    Atom (AtomLabel label) -> Right (label, expr)
-    _ -> Left $ EvalError "Invalid `let` binding"
-  _ -> Left $ EvalError "Invalid `let` binding"
+    Atom (AtomLabel label) -> pure (label, expr)
+    _ -> withErr $ EvalError "Invalid `let` binding"
+  _ -> withErr $ EvalError "Invalid `let` binding"
 
 isSymbol :: Expression -> Bool
 isSymbol = \case
@@ -67,10 +72,10 @@ mapBool fn = \case
   AtomBool x -> AtomBool $ fn x
   x -> x
 
-onlyBool :: Atom -> Either Error Atom
+onlyBool :: Atom -> ExceptWithEvalError Atom
 onlyBool = \case
-  AtomBool b -> Right $ AtomBool b
-  _ -> Left $ EvalError "Invalid data type. Expected boolean"
+  AtomBool b -> pure $ AtomBool b
+  _ -> withErr $ EvalError "Invalid data type. Expected boolean"
 
 createLabel = Atom . AtomSymbol . Atom . AtomLabel
 

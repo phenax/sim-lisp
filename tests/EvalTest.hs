@@ -4,6 +4,7 @@ module EvalTest where
 
 import Atom
 import Control.Monad
+import Control.Monad.Trans.Except
 import Errors
 import Eval
 import LParser
@@ -11,80 +12,80 @@ import Test.Hspec
 import Text.RawString.QQ
 
 evalExpressionTests = do
-  let eval = evaluate <=< tokenize
+  let eval = runExceptT . (evaluate <=< (except . tokenize))
    in describe "evalExpression" $ do
         it "should be identity for single args" $ do
-          eval "(+ 5)" `shouldBe` Right (AtomInt 5)
-          eval "(- 6)" `shouldBe` Right (AtomInt 6)
-          eval "(* 7)" `shouldBe` Right (AtomInt 7)
-          eval "(/ 8)" `shouldBe` Right (AtomInt 8)
+          eval "(+ 5)" `shouldReturn` Right (AtomInt 5)
+          eval "(- 6)" `shouldReturn` Right (AtomInt 6)
+          eval "(* 7)" `shouldReturn` Right (AtomInt 7)
+          eval "(/ 8)" `shouldReturn` Right (AtomInt 8)
         it "should do basic 2 value math" $ do
-          eval "(+ 5 2)" `shouldBe` Right (AtomInt 7)
-          eval "(+ 120 5)" `shouldBe` Right (AtomInt 125)
-          eval "(- 120 5)" `shouldBe` Right (AtomInt 115)
-          eval "(* 26 2)" `shouldBe` Right (AtomInt 52)
-          eval "(/ 26 2)" `shouldBe` Right (AtomInt 13)
+          eval "(+ 5 2)" `shouldReturn` Right (AtomInt 7)
+          eval "(+ 120 5)" `shouldReturn` Right (AtomInt 125)
+          eval "(- 120 5)" `shouldReturn` Right (AtomInt 115)
+          eval "(* 26 2)" `shouldReturn` Right (AtomInt 52)
+          eval "(/ 26 2)" `shouldReturn` Right (AtomInt 13)
         it "should do nested computations" $ do
-          eval "(* 5 (+ 2) (- 11 2) (/ 10 5))" `shouldBe` Right (AtomInt 180)
+          eval "(* 5 (+ 2) (- 11 2) (/ 10 5))" `shouldReturn` Right (AtomInt 180)
         it "should do basic math for n-args" $ do
-          eval "(+ 10 2 3 6)" `shouldBe` Right (AtomInt 21)
-          eval "(+ 120 5 21 1 1 6)" `shouldBe` Right (AtomInt 154)
-          eval "(- 120 5 100)" `shouldBe` Right (AtomInt 15)
-          eval "(* 26 2 10)" `shouldBe` Right (AtomInt 520)
-          eval "(/ 26 2 13)" `shouldBe` Right (AtomInt 1)
+          eval "(+ 10 2 3 6)" `shouldReturn` Right (AtomInt 21)
+          eval "(+ 120 5 21 1 1 6)" `shouldReturn` Right (AtomInt 154)
+          eval "(- 120 5 100)" `shouldReturn` Right (AtomInt 15)
+          eval "(* 26 2 10)" `shouldReturn` Right (AtomInt 520)
+          eval "(/ 26 2 13)" `shouldReturn` Right (AtomInt 1)
         it "should emit eval error for invalid types" $ do
-          eval "(+ 10 \"fucking hell\" 5)" `shouldBe` Left (EvalError "Invalid set of params")
-          eval "(+ 10 (+ 12 \"1\"))" `shouldBe` Left (EvalError "Invalid set of params")
+          eval "(+ 10 \"fucking hell\" 5)" `shouldReturn` Left (EvalError "Invalid set of params")
+          eval "(+ 10 (+ 12 \"1\"))" `shouldReturn` Left (EvalError "Invalid set of params")
         it "should allow overriding default operators" $ do
-          eval "(def + (a b) (* a b)) (+ 5 3)" `shouldBe` Right (AtomInt 15)
+          eval "(def + (a b) (* a b)) (+ 5 3)" `shouldReturn` Right (AtomInt 15)
 
         describe "bool operations" $ do
           it "should compare numbers correctly" $ do
-            eval "(< 5 1)" `shouldBe` Right (AtomBool False)
-            eval "(< 1 5)" `shouldBe` Right (AtomBool True)
-            eval "(> 5 1)" `shouldBe` Right (AtomBool True)
-            eval "(= 5 5)" `shouldBe` Right (AtomBool True)
-            eval "(= 5 2)" `shouldBe` Right (AtomBool False)
-            eval "(> 5 5)" `shouldBe` Right (AtomBool False)
-            eval "(>= 5 5)" `shouldBe` Right (AtomBool True)
-            eval "(>= 5 2)" `shouldBe` Right (AtomBool True)
-            eval "(< 5 5)" `shouldBe` Right (AtomBool False)
-            eval "(<= 5 5)" `shouldBe` Right (AtomBool True)
-            eval "(<= 2 5)" `shouldBe` Right (AtomBool True)
+            eval "(< 5 1)" `shouldReturn` Right (AtomBool False)
+            eval "(< 1 5)" `shouldReturn` Right (AtomBool True)
+            eval "(> 5 1)" `shouldReturn` Right (AtomBool True)
+            eval "(= 5 5)" `shouldReturn` Right (AtomBool True)
+            eval "(= 5 2)" `shouldReturn` Right (AtomBool False)
+            eval "(> 5 5)" `shouldReturn` Right (AtomBool False)
+            eval "(>= 5 5)" `shouldReturn` Right (AtomBool True)
+            eval "(>= 5 2)" `shouldReturn` Right (AtomBool True)
+            eval "(< 5 5)" `shouldReturn` Right (AtomBool False)
+            eval "(<= 5 5)" `shouldReturn` Right (AtomBool True)
+            eval "(<= 2 5)" `shouldReturn` Right (AtomBool True)
           it "should compare string correctly" $ do
-            eval [r|(> "hello" "hallo")|] `shouldBe` Right (AtomBool True)
-            eval [r|(> "h" "he")|] `shouldBe` Right (AtomBool False)
-            eval [r|(> "hee" "he")|] `shouldBe` Right (AtomBool True)
-            eval [r|(> "1-1" "1-0")|] `shouldBe` Right (AtomBool True)
-            eval [r|(< "1-0" "1-1")|] `shouldBe` Right (AtomBool True)
-            eval [r|(= "1-1" "1-1")|] `shouldBe` Right (AtomBool True)
-            eval [r|(= "1-0" "1-1")|] `shouldBe` Right (AtomBool False)
+            eval [r|(> "hello" "hallo")|] `shouldReturn` Right (AtomBool True)
+            eval [r|(> "h" "he")|] `shouldReturn` Right (AtomBool False)
+            eval [r|(> "hee" "he")|] `shouldReturn` Right (AtomBool True)
+            eval [r|(> "1-1" "1-0")|] `shouldReturn` Right (AtomBool True)
+            eval [r|(< "1-0" "1-1")|] `shouldReturn` Right (AtomBool True)
+            eval [r|(= "1-1" "1-1")|] `shouldReturn` Right (AtomBool True)
+            eval [r|(= "1-0" "1-1")|] `shouldReturn` Right (AtomBool False)
           it "should return T for all numbers, F for others" $ do
-            eval "(number? 20)" `shouldBe` Right (AtomBool True)
-            eval "(number? (* 2 3))" `shouldBe` Right (AtomBool True)
-            eval "(number? 0)" `shouldBe` Right (AtomBool True)
-            eval "(declare var 20) (number? var)" `shouldBe` Right (AtomBool True)
-            eval "(declare var F) (number? var)" `shouldBe` Right (AtomBool False)
-            eval "(number? T)" `shouldBe` Right (AtomBool False)
-            eval "(number? Nil)" `shouldBe` Right (AtomBool False)
-            eval "(number? (lambda (x) (+ 5 x)))" `shouldBe` Right (AtomBool False)
-            eval "(number? \"hello\")" `shouldBe` Right (AtomBool False)
+            eval "(number? 20)" `shouldReturn` Right (AtomBool True)
+            eval "(number? (* 2 3))" `shouldReturn` Right (AtomBool True)
+            eval "(number? 0)" `shouldReturn` Right (AtomBool True)
+            eval "(declare var 20) (number? var)" `shouldReturn` Right (AtomBool True)
+            eval "(declare var F) (number? var)" `shouldReturn` Right (AtomBool False)
+            eval "(number? T)" `shouldReturn` Right (AtomBool False)
+            eval "(number? Nil)" `shouldReturn` Right (AtomBool False)
+            eval "(number? (lambda (x) (+ 5 x)))" `shouldReturn` Right (AtomBool False)
+            eval "(number? \"hello\")" `shouldReturn` Right (AtomBool False)
           it "should return T for all booleans, F for others" $ do
-            eval "(declare var F) (boolean? var)" `shouldBe` Right (AtomBool True)
-            eval "(boolean? T)" `shouldBe` Right (AtomBool True)
-            eval "(boolean? Nil)" `shouldBe` Right (AtomBool True)
-            eval "(boolean? (or T F))" `shouldBe` Right (AtomBool True)
-            eval "(boolean? (not T))" `shouldBe` Right (AtomBool True)
-            eval "(boolean? 20)" `shouldBe` Right (AtomBool False)
-            eval "(boolean? (* 2 3))" `shouldBe` Right (AtomBool False)
-            eval "(boolean? 0)" `shouldBe` Right (AtomBool False)
-            eval "(declare var 20) (boolean? var)" `shouldBe` Right (AtomBool False)
-            eval "(boolean? (lambda (x) (+ 5 x)))" `shouldBe` Right (AtomBool False)
-            eval "(boolean? \"hello\")" `shouldBe` Right (AtomBool False)
+            eval "(declare var F) (boolean? var)" `shouldReturn` Right (AtomBool True)
+            eval "(boolean? T)" `shouldReturn` Right (AtomBool True)
+            eval "(boolean? Nil)" `shouldReturn` Right (AtomBool True)
+            eval "(boolean? (or T F))" `shouldReturn` Right (AtomBool True)
+            eval "(boolean? (not T))" `shouldReturn` Right (AtomBool True)
+            eval "(boolean? 20)" `shouldReturn` Right (AtomBool False)
+            eval "(boolean? (* 2 3))" `shouldReturn` Right (AtomBool False)
+            eval "(boolean? 0)" `shouldReturn` Right (AtomBool False)
+            eval "(declare var 20) (boolean? var)" `shouldReturn` Right (AtomBool False)
+            eval "(boolean? (lambda (x) (+ 5 x)))" `shouldReturn` Right (AtomBool False)
+            eval "(boolean? \"hello\")" `shouldReturn` Right (AtomBool False)
 
         describe "stdlib loaded" $ do
           it "should be identity for single args" $ do
-            eval "stdlib-loaded?" `shouldBe` Right (AtomBool True)
+            eval "stdlib-loaded?" `shouldReturn` Right (AtomBool True)
 
         describe "do" $ do
           it "should return last expression from block" $ do
@@ -95,7 +96,7 @@ evalExpressionTests = do
                 (+ 3 3)
                 (+ 5 6))
             |]
-              `shouldBe` Right (AtomInt 11)
+              `shouldReturn` Right (AtomInt 11)
           it "should return last expression from block" $ do
             eval
               [r|
@@ -104,7 +105,7 @@ evalExpressionTests = do
                 (+ 3 3)
                 (+ 5 x))
             |]
-              `shouldBe` Right (AtomInt 12)
+              `shouldReturn` Right (AtomInt 12)
 
         describe "declare" $ do
           it "should declare variable in the current scope" $ do
@@ -115,13 +116,13 @@ evalExpressionTests = do
                 (declare y 3)
                 (* x y))
             |]
-              `shouldBe` Right (AtomInt 18)
+              `shouldReturn` Right (AtomInt 18)
 
         describe "let" $ do
           it "should provide definied variables inside the scope" $ do
-            eval "(let ((x 5) (y 6)) (+ x (* y 2)))" `shouldBe` Right (AtomInt 17)
+            eval "(let ((x 5) (y 6)) (+ x (* y 2)))" `shouldReturn` Right (AtomInt 17)
           it "should not provide definied variables outside the scope" $ do
-            eval "(* 20 (let ((x 5)) x) x)" `shouldBe` Left (EvalError "Variable x not found in scope")
+            eval "(* 20 (let ((x 5)) x) x)" `shouldReturn` Left (EvalError "Variable x not found in scope")
           it "should allow let inside let definitions" $ do
             eval
               [r|(let (
@@ -129,31 +130,31 @@ evalExpressionTests = do
                 (y (let ((beam 200)) (/ beam 10) ))
               ) (+ x (* y 2)))
             |]
-              `shouldBe` Right (AtomInt 45)
+              `shouldReturn` Right (AtomInt 45)
           it "should allow nesting let statements" $ do
             eval
               [r|(let (
                 (x 5)
               ) (let ( (y 2) ) (* x y 2) ))
             |]
-              `shouldBe` Right (AtomInt 20)
+              `shouldReturn` Right (AtomInt 20)
           it "should allow shadowing let values" $ do
-            eval "(let ((x 5)) (let ((x 2)) x))" `shouldBe` Right (AtomInt 2)
+            eval "(let ((x 5)) (let ((x 2)) x))" `shouldReturn` Right (AtomInt 2)
 
         describe "if" $ do
           it "should run the then body in true" $ do
-            eval "(if T 1 0)" `shouldBe` Right (AtomInt 1)
+            eval "(if T 1 0)" `shouldReturn` Right (AtomInt 1)
           it "should run the else body in false" $ do
-            eval "(if F 1 0)" `shouldBe` Right (AtomInt 0)
+            eval "(if F 1 0)" `shouldReturn` Right (AtomInt 0)
           it "should evaluate expressions that return values" $ do
-            eval "(declare x 2) (if (< x 1) 1 (- 1 1))" `shouldBe` Right (AtomInt 0)
-            eval "(declare x 2) (if (= x 2) (- 5 2) (+ 20 5))" `shouldBe` Right (AtomInt 3)
+            eval "(declare x 2) (if (< x 1) 1 (- 1 1))" `shouldReturn` Right (AtomInt 0)
+            eval "(declare x 2) (if (= x 2) (- 5 2) (+ 20 5))" `shouldReturn` Right (AtomInt 3)
 
         describe "lambda" $ do
           it "should save lambda in scope and call it" $ do
-            eval "(let ((incr (lambda (x) (+ x 1)))) (incr 5) )" `shouldBe` Right (AtomInt 6)
+            eval "(let ((incr (lambda (x) (+ x 1)))) (incr 5) )" `shouldReturn` Right (AtomInt 6)
           it "should allow inline lambda functions" $ do
-            eval "((lambda (x) (+ x 1)) 10)" `shouldBe` Right (AtomInt 11)
+            eval "((lambda (x) (+ x 1)) 10)" `shouldReturn` Right (AtomInt 11)
           it "should do factorial" $ do
             eval
               [r|(declare fact (lambda (x) (
@@ -164,10 +165,10 @@ evalExpressionTests = do
 
                (fact 5)
               |]
-              `shouldBe` Right (AtomInt 120)
+              `shouldReturn` Right (AtomInt 120)
           it "should create a lambda atom" $ do
             eval "(lambda (x) (+ x 1))"
-              `shouldBe` Right
+              `shouldReturn` Right
                 ( AtomLambda
                     ["x"]
                     ( SymbolExpression [createLabel "+", createLabel "x", Atom (AtomInt 1)]
@@ -180,17 +181,17 @@ evalExpressionTests = do
                 (incr (lambda (x) (+ x 1)))
               ) (incr (mul 3)))
               |]
-              `shouldBe` Right (AtomInt 16)
+              `shouldReturn` Right (AtomInt 16)
           it "should shadow any variables outside scope" $ do
             eval
               [r|(declare x 100)
                 (declare incr (lambda (x) (+ x 1)))
                 (incr 10)
               |]
-              `shouldBe` Right (AtomInt 11)
+              `shouldReturn` Right (AtomInt 11)
           it "should create a lambda atom" $ do
             eval "(lambda (x) (+ x 1))"
-              `shouldBe` Right
+              `shouldReturn` Right
                 ( AtomLambda
                     ["x"]
                     ( SymbolExpression [createLabel "+", createLabel "x", Atom (AtomInt 1)]
@@ -199,55 +200,55 @@ evalExpressionTests = do
 
         describe "quote" $ do
           it "should wrap the symbol" $ do
-            eval [r|(quote hello)|] `shouldBe` Right (AtomSymbol (createLabel "hello"))
+            eval [r|(quote hello)|] `shouldReturn` Right (AtomSymbol (createLabel "hello"))
           it "should wrap the expression" $ do
-            eval [r|(quote (+ 5 2))|] `shouldBe` Right (AtomSymbol (SymbolExpression [createLabel "+", Atom (AtomInt 5), Atom (AtomInt 2)]))
+            eval [r|(quote (+ 5 2))|] `shouldReturn` Right (AtomSymbol (SymbolExpression [createLabel "+", Atom (AtomInt 5), Atom (AtomInt 2)]))
 
         describe "eval" $ do
           it "should evaluate a quote" $ do
-            eval [r| (declare hello 6) (eval (quote (+ hello 5))) |] `shouldBe` Right (AtomInt 11)
+            eval [r| (declare hello 6) (eval (quote (+ hello 5))) |] `shouldReturn` Right (AtomInt 11)
           it "should evaluate a quote" $ do
-            eval [r| (declare fir (quote (+ 20 5))) (eval (if T fir 5)) |] `shouldBe` Right (AtomInt 25)
+            eval [r| (declare fir (quote (+ 20 5))) (eval (if T fir 5)) |] `shouldReturn` Right (AtomInt 25)
           it "should return error if not a quote" $ do
-            eval [r| (eval 100) |] `shouldBe` Left (EvalError "Invalid argument passed to `eval`")
+            eval [r| (eval 100) |] `shouldReturn` Left (EvalError "Invalid argument passed to `eval`")
           it "should return error if no args or extra args" $ do
-            eval [r| (eval) |] `shouldBe` Left (EvalError "Invalid number of arguments to `eval`")
-            eval [r| (eval 10 20 30) |] `shouldBe` Left (EvalError "Invalid number of arguments to `eval`")
+            eval [r| (eval) |] `shouldReturn` Left (EvalError "Invalid number of arguments to `eval`")
+            eval [r| (eval 10 20 30) |] `shouldReturn` Left (EvalError "Invalid number of arguments to `eval`")
 
         describe "car" $ do
           it "should return first item" $ do
-            eval [r| (declare hello (quote (5 4 3 2 1))) (car hello) |] `shouldBe` Right (AtomInt 5)
+            eval [r| (declare hello (quote (5 4 3 2 1))) (car hello) |] `shouldReturn` Right (AtomInt 5)
           it "should return nil for empty list" $ do
-            eval [r| (declare hello (quote ())) (car hello) |] `shouldBe` Right AtomNil
+            eval [r| (declare hello (quote ())) (car hello) |] `shouldReturn` Right AtomNil
           it "should throw error for non-list args" $ do
-            eval [r| (car 121212) |] `shouldBe` Left (EvalError "Invalid argument passed to `car`")
+            eval [r| (car 121212) |] `shouldReturn` Left (EvalError "Invalid argument passed to `car`")
           it "should throw error for wrong number of args" $ do
-            eval [r| (car 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `car`")
-            eval [r| (car) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `car`")
+            eval [r| (car 1 2 3) |] `shouldReturn` Left (EvalError "Invalid number of arguments passed to `car`")
+            eval [r| (car) |] `shouldReturn` Left (EvalError "Invalid number of arguments passed to `car`")
 
         describe "cdr" $ do
           it "should return rest of the list" $ do
             eval [r| (declare hello (quote (5 4 3 2 1))) (cdr hello) |]
-              `shouldBe` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
+              `shouldReturn` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
           it "should return nil for empty list" $ do
-            eval [r| (declare hello (quote ())) (cdr hello) |] `shouldBe` Right AtomNil
+            eval [r| (declare hello (quote ())) (cdr hello) |] `shouldReturn` Right AtomNil
           it "should throw error for non-list args" $ do
-            eval [r| (cdr 121212) |] `shouldBe` Left (EvalError "Invalid argument passed to `cdr`")
+            eval [r| (cdr 121212) |] `shouldReturn` Left (EvalError "Invalid argument passed to `cdr`")
           it "should throw error for wrong number of args" $ do
-            eval [r| (cdr 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cdr`")
-            eval [r| (cdr) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cdr`")
+            eval [r| (cdr 1 2 3) |] `shouldReturn` Left (EvalError "Invalid number of arguments passed to `cdr`")
+            eval [r| (cdr) |] `shouldReturn` Left (EvalError "Invalid number of arguments passed to `cdr`")
 
         describe "cons" $ do
           it "should prepend item to list" $ do
             eval [r|(cons 5 (quote (4 3 2 1))) |]
-              `shouldBe` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5), Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
+              `shouldReturn` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5), Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
           it "should return list with first item if cdr is empty" $ do
-            eval [r|(cons 5 (quote ())) |] `shouldBe` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5)]))
+            eval [r|(cons 5 (quote ())) |] `shouldReturn` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5)]))
           it "should throw error for non-list args" $ do
-            eval [r| (cons 8 5) |] `shouldBe` Left (EvalError "Invalid argument passed to `cons`")
+            eval [r| (cons 8 5) |] `shouldReturn` Left (EvalError "Invalid argument passed to `cons`")
           it "should throw error for wrong number of args" $ do
-            eval [r| (cons 1 2 3) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cons`")
-            eval [r| (cons) |] `shouldBe` Left (EvalError "Invalid number of arguments passed to `cons`")
+            eval [r| (cons 1 2 3) |] `shouldReturn` Left (EvalError "Invalid number of arguments passed to `cons`")
+            eval [r| (cons) |] `shouldReturn` Left (EvalError "Invalid number of arguments passed to `cons`")
 
         describe "def" $ do
           it "should do factorial with def expression" $ do
@@ -260,6 +261,6 @@ evalExpressionTests = do
 
                (fact 5)
               )"|]
-              `shouldBe` Right (AtomInt 120)
+              `shouldReturn` Right (AtomInt 120)
 
 --

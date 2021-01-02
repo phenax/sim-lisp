@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Monad.Trans.Except
 import Eval (emptyScope, interpret)
 import System.Environment
 import System.IO
@@ -13,7 +14,8 @@ repl pScope = do
     ":quit" -> return ()
     expr -> do
       putStrLn ""
-      case interpret pScope expr of
+      result <- runExceptT $ interpret pScope expr
+      case result of
         Right (result, scope) -> do
           print result
           repl scope
@@ -23,7 +25,8 @@ repl pScope = do
 
 interpretFile f = do
   contents <- readFile f
-  case interpret emptyScope contents of
+  result <- runExceptT $ interpret emptyScope contents
+  case result of
     Right (result, _) -> print result
     Left e -> print e
 

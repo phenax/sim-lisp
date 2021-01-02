@@ -8,7 +8,7 @@
   - [X] Loading stdlib
   - [X] Fix scope issue for lambda
   - [X] Fix repl to maintain global scope
-  - [X] `def` - Define macros
+  - [X] `def` - Define functions
   - [X] Comments
   - [X] Symbol String -> Symbol Expression
   - [X] `quote`
@@ -23,6 +23,7 @@
   - [ ] Syntax for eval, quote
   - [ ] Meta stuff
   - [ ] `quasiquote`, `unquote`
+  - [ ] More error test cases
   - [ ] Generalize errors
   - [ ] Error line numbers
   - [ ] Boolean helpers (`if`, `cond`, conditional combinators)
