@@ -43,6 +43,9 @@ instance Show Atom where
 
 type ExceptWithEvalError = ExceptT Error IO
 
+liftExceptT :: IO a -> ExceptT e IO a
+liftExceptT = ExceptT . fmap Right
+
 withErr = except . Left
 
 letPair :: Expression -> ExceptWithEvalError (String, Expression)

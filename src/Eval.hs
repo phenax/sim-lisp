@@ -60,8 +60,15 @@ builtins =
     ("let", letbindingE),
     ("number?", isNumberE),
     ("boolean?", isBooleanE),
+    ("display", displayE),
     ("import", importE)
   ]
+
+displayE :: Evaluator
+displayE scope exprs = do
+  result <- mergeM . map (fmap show . evalExpressionPure scope) $ exprs
+  liftExceptT . putStrLn . unwords $ result
+  return (AtomNil, scope)
 
 typeCheck :: (Atom -> Bool) -> Evaluator
 typeCheck check scope = \case

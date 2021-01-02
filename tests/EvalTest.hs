@@ -263,4 +263,10 @@ evalExpressionTests = do
               )"|]
               `shouldReturn` Right (AtomInt 120)
 
+        describe "display" $ do
+          it "should print out stuff and return last atom" $ do
+            eval "(display 1 \"hello\" 3 4)" `shouldReturn` Right AtomNil
+          it "should print out stuff" $ do
+            eval "(display \"wow\")" `shouldReturn` Right AtomNil
+
 --

@@ -4,4 +4,11 @@
     (* x (fact (- x 1)))
 ))
 
-(fact 5)
+(display "Factorials")
+(display (fact 5))
+(display (fact 6))
+(display (fact 7))
+(display (fact 8))
+(display (fact 9))
+
+Nil
