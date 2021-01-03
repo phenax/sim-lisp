@@ -12,7 +12,8 @@ import Test.Hspec
 import Text.RawString.QQ
 
 evalExpressionTests = do
-  let eval = runExceptT . (evaluate <=< (except . tokenize))
+  let -- eval :: (CIO.ConsoleIO io) => String -> io (Either Error Atom)
+      eval = runExceptT . (evaluate <=< (except . tokenize))
    in describe "evalExpression" $ do
         it "should be identity for single args" $ do
           eval "(+ 5)" `shouldReturn` Right (AtomInt 5)
@@ -264,9 +265,7 @@ evalExpressionTests = do
               `shouldReturn` Right (AtomInt 120)
 
         describe "display" $ do
-          it "should print out stuff and return last atom" $ do
+          it "should return nil" $ do
             eval "(display 1 \"hello\" 3 4)" `shouldReturn` Right AtomNil
-          it "should print out stuff" $ do
-            eval "(display \"wow\")" `shouldReturn` Right AtomNil
 
 --

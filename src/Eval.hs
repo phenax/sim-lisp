@@ -13,6 +13,7 @@ import qualified Data.ByteString.Char8 as BChar8
 import Data.FileEmbed
 import Data.List
 import qualified Data.Map as Map
+import qualified Effects.ConsoleIO as ConsoleIO
 import Errors
 import LParser
 import Utils
@@ -67,7 +68,7 @@ builtins =
 displayE :: Evaluator
 displayE scope exprs = do
   result <- mergeM . map (fmap show . evalExpressionPure scope) $ exprs
-  liftExceptT . putStrLn . unwords $ result
+  liftExceptT . ConsoleIO.putStrLn . unwords $ result
   return (AtomNil, scope)
 
 typeCheck :: (Atom -> Bool) -> Evaluator
