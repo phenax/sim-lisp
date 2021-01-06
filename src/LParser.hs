@@ -36,8 +36,14 @@ booleanP = Atom . AtomBool <$> ((True <$ string "T") <|> (False <$ string "F"))
 nilP :: Parsec String u Expression
 nilP = Atom AtomNil <$ string "Nil"
 
+quotedP :: Parsec String u Expression
+quotedP = toExpr <$> (char '\'' >> sExpressionP)
+  where
+    toExpr (SymbolExpression []) = Atom AtomNil
+    toExpr expr = Atom $ AtomSymbol expr
+
 atomP :: Parsec String u Expression
-atomP = withWhitespace (numberP <|> stringP <|> nilP <|> booleanP <|> symbolP <?> "Syntax error")
+atomP = withWhitespace (numberP <|> stringP <|> nilP <|> booleanP <|> symbolP <|> quotedP <?> "Syntax error")
 
 commentP :: Parsec String u Expression
 commentP = Atom AtomNil <$ (char ';' >> anyChar `manyTill` newline)

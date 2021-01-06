@@ -52,6 +52,40 @@ valueParsers = do
           parseValue "T" `shouldBe` Right ((Atom . AtomBool) True)
           parseValue "F" `shouldBe` Right ((Atom . AtomBool) False)
 
+  let parseValue = parse quotedP "Quoted/Unevaluated expression"
+   in describe "numberP" $ do
+        it "should parse nil expression" $ do
+          parseValue "'()" `shouldBe` Right (Atom AtomNil)
+        it "should parse list" $ do
+          parseValue "'(1 2)"
+            `shouldBe` Right
+              ( Atom $
+                  AtomSymbol $
+                    SymbolExpression
+                      [ Atom (AtomInt 1),
+                        Atom (AtomInt 2)
+                      ]
+              )
+        it "should parse any nested expression inside" $ do
+          parseValue "'(1 (1 2) (+ 2 3) 6)"
+            `shouldBe` Right
+              ( Atom $
+                  AtomSymbol $
+                    SymbolExpression
+                      [ Atom (AtomInt 1),
+                        SymbolExpression
+                          [ Atom (AtomInt 1),
+                            Atom (AtomInt 2)
+                          ],
+                        SymbolExpression
+                          [ createLabel "+",
+                            Atom (AtomInt 2),
+                            Atom (AtomInt 3)
+                          ],
+                        Atom (AtomInt 6)
+                      ]
+              )
+
 expressionParsers = do
   let parseValue = parse expressionP "Expr"
    in describe "expressionP" $ do
