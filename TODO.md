@@ -20,6 +20,7 @@
   - [X] Fix display argument order
   - [X] Syntax for eval, quote
   - [X] Remove return value printing for evalation of file
+  - [X] Allow using bindings inside definition. Eg - `(let ((a 1) (b (+ a 1))) (+ a b))`
   - [ ] simple console io
   - [ ] Ignore comments instead of making them nil
   - [ ] Variable number of args

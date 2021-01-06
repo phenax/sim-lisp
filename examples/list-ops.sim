@@ -9,6 +9,13 @@
     (foldl add 0 ls)
     (length ls)))
 
+(display
+  (let (
+    (a 20)
+    (b (+ a 10))
+    (c (* a b))
+  ) (+ a b c)))
+
 (display "Length:" (length ls))
 
 (display "Sum:" (foldl add 0 ls))

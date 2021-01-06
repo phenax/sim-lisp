@@ -29,8 +29,11 @@ innerConcatPair list item = do
   x <- snd item
   return $ (fst item, x) : ls
 
+rmergeM :: Monad f => [f a] -> f [a]
+rmergeM = foldl reverseMonadConcat (pure [])
+
 mergeM :: Monad f => [f a] -> f [a]
-mergeM = foldl reverseMonadConcat (return [])
+mergeM = foldl monadConcat (pure [])
 
 flattenPairBySnd :: [(k, ExceptWithEvalError a)] -> ExceptWithEvalError [(k, a)]
 flattenPairBySnd = foldl innerConcatPair (pure [])

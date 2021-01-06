@@ -141,6 +141,8 @@ evalExpressionTests = do
               `shouldReturn` Right (AtomInt 20)
           it "should allow shadowing let values" $ do
             eval "(let ((x 5)) (let ((x 2)) x))" `shouldReturn` Right (AtomInt 2)
+          it "should allow using bindings in the next variable" $ do
+            eval "(let ((a 1) (b (+ a 1))) (+ a b))" `shouldReturn` Right (AtomInt 3)
 
         describe "if" $ do
           it "should run the then body in true" $ do

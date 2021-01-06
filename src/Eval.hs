@@ -88,7 +88,7 @@ isNumberE = typeCheck $ \case
   _ -> False
 
 evalConcat :: Scope -> [Expression] -> ExceptWithEvalError [(Atom, Scope)]
-evalConcat scope = mergeM . map (evalExpression scope)
+evalConcat scope = rmergeM . map (evalExpression scope)
 
 foldIntsE :: (Integer -> Integer -> Integer) -> Integer -> Evaluator
 foldIntsE fn init scope expr = evalConcat scope expr >>= folder scope
@@ -104,7 +104,7 @@ lambdaE :: Evaluator
 lambdaE scope = \case
   [SymbolExpression args, body] ->
     if all isSymbol args
-      then (\params -> (AtomLambda params body, scope)) <$> (toEither . mergeM . map toSymbolString) args
+      then (\params -> (AtomLambda params body, scope)) <$> (toEither . rmergeM . map toSymbolString) args
       else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
   _ -> withErr $ EvalError "Invalid `lambda` expression"
 
@@ -124,21 +124,26 @@ defineFunctionE :: Evaluator
 defineFunctionE scope = \case
   [Atom (AtomSymbol (Atom (AtomLabel name))), SymbolExpression args, body] ->
     if all isSymbol args
-      then fmap defineLambda . toEither . mergeM . map toSymbolString $ args
+      then fmap defineLambda . toEither . rmergeM . map toSymbolString $ args
       else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
     where
-      defineLambda params = let lambda = AtomLambda params body in (lambda, Map.insert name lambda scope)
+      defineLambda params =
+        let lambda = AtomLambda params body
+         in (lambda, Map.insert name lambda scope)
   _ -> withErr $ EvalError "Invalid `def` expression"
+
+resolveScope :: ExceptWithEvalError Scope -> ExceptWithEvalError (String, Expression) -> ExceptWithEvalError Scope
+resolveScope sc binding = do
+  scope' <- sc
+  (name, expr) <- binding
+  value <- evalExpressionPure scope' expr
+  return $ Map.insert name value scope'
 
 letbindingE :: Evaluator
 letbindingE scope = \case
   [SymbolExpression params, expression] -> do
-    paramMap <-
-      let bindingsToScope = fmap (Map.fromList . map (mapSnd fst)) . flattenPairBySnd
-          evalArgs = map $ fmap (mapSnd (evalExpression scope)) . letPair
-       in mergeM (evalArgs params) >>= bindingsToScope
-    let newScope = paramMap `Map.union` scope
-     in evalExpression newScope expression
+    newScope <- let x = foldl resolveScope (pure scope) . map letPair $ params in x
+    evalExpression newScope expression
   _ -> withErr $ EvalError "Invalid `let` expression"
 
 -- TODO: Implement after io setup
