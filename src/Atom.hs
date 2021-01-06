@@ -35,7 +35,7 @@ compareAtom _ _ = LT
 instance Show Atom where
   show (AtomInt n) = show n
   show AtomNil = "Nil"
-  show (AtomString s) = "\"" ++ s ++ "\""
+  show (AtomString s) = s
   show (AtomSymbol s) = show s
   show (AtomLabel s) = s
   show (AtomBool b) = if b then "T" else "F"

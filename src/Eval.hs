@@ -67,7 +67,7 @@ builtins =
 
 displayE :: Evaluator
 displayE scope exprs = do
-  result <- mergeM . map (fmap show . evalExpressionPure scope) $ exprs
+  result <- foldl monadConcat (pure []) . map (fmap show . evalExpressionPure scope) $ exprs
   liftExceptT . ConsoleIO.putStrLn . unwords $ result
   return (AtomNil, scope)
 

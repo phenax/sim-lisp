@@ -17,10 +17,11 @@
   - [X] Inline lambda
   - [X] Allow predefined functions to be overridden
   - [X] functions for type checking
+  - [X] Fix display argument order
+  - [X] Syntax for eval, quote
   - [ ] simple console io
   - [ ] Ignore comments instead of making them nil
   - [ ] Variable number of args
-  - [ ] Syntax for eval, quote
   - [ ] Meta stuff
   - [ ] `quasiquote`, `unquote`
   - [ ] More error test cases

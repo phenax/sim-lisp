@@ -10,11 +10,17 @@ mapFst fn (a, b) = (fn a, b)
 
 mapSnd fn (a, b) = (a, fn b)
 
-innerConcat :: Monad m => m [a] -> m a -> m [a]
-innerConcat list item = do
+reverseMonadConcat :: Monad m => m [a] -> m a -> m [a]
+reverseMonadConcat list item = do
   ls <- list
   x <- item
   return $ x : ls
+
+monadConcat :: Monad m => m [a] -> m a -> m [a]
+monadConcat m1 m2 = do
+  a <- m1
+  b <- m2
+  return $ a ++ [b]
 
 -- TODO: Refactor both to use an innerConcatBy
 innerConcatPair :: Monad m => m [(a, b)] -> (a, m b) -> m [(a, b)]
@@ -24,7 +30,7 @@ innerConcatPair list item = do
   return $ (fst item, x) : ls
 
 mergeM :: Monad f => [f a] -> f [a]
-mergeM = foldl innerConcat (return [])
+mergeM = foldl reverseMonadConcat (return [])
 
 flattenPairBySnd :: [(k, ExceptWithEvalError a)] -> ExceptWithEvalError [(k, a)]
 flattenPairBySnd = foldl innerConcatPair (pure [])
