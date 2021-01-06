@@ -9,9 +9,9 @@
     (foldl add 0 ls)
     (length ls)))
 
-(display "Length: " (length ls))
+(display "Length:" (length ls))
 
-(display "Sum: " (foldl add 0 ls))
+(display "Sum:" (foldl add 0 ls))
 
-(display "Average: " (average ls))
+(display "Average:" (average ls))
 

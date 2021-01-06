@@ -27,7 +27,7 @@ interpretFile f = do
   contents <- readFile f
   result <- runExceptT $ interpret emptyScope contents
   case result of
-    Right (result, _) -> print result
+    Right _ -> mempty
     Left e -> print e
 
 main :: IO ()

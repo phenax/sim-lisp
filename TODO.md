@@ -19,6 +19,7 @@
   - [X] functions for type checking
   - [X] Fix display argument order
   - [X] Syntax for eval, quote
+  - [X] Remove return value printing for evalation of file
   - [ ] simple console io
   - [ ] Ignore comments instead of making them nil
   - [ ] Variable number of args
