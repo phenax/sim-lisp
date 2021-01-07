@@ -202,6 +202,22 @@ evalExpressionTests = do
                 )
           it "should allow 0 parameters" $ do
             eval "(def fn () (* 2 5)) (fn)" `shouldReturn` Right (AtomInt 10)
+          it "should allow accessing the rest of the params with ... symbol syntax" $ do
+            eval "((lambda (... rest) rest) 1 2 3)"
+              `shouldReturn` Right (AtomSymbol . SymbolExpression $ [Atom . AtomInt $ 1, Atom . AtomInt $ 2, Atom . AtomInt $ 3])
+            eval "((lambda (a b ... rest) rest) 1 2 3)"
+              `shouldReturn` Right (AtomSymbol . SymbolExpression $ [Atom . AtomInt $ 3])
+            eval "(def tail (a ... rest) rest) (tail 1 2 3)"
+              `shouldReturn` Right
+                ( AtomSymbol . SymbolExpression $
+                    [ Atom . AtomInt $ 2,
+                      Atom . AtomInt $ 3
+                    ]
+                )
+            eval "(def tail (a b ... rest) rest) (tail 1 2 3)"
+              `shouldReturn` Right (AtomSymbol . SymbolExpression $ [Atom . AtomInt $ 3])
+            eval "(def tail (... rest) rest) (tail 1 2 3)"
+              `shouldReturn` Right (AtomSymbol . SymbolExpression $ [Atom . AtomInt $ 1, Atom . AtomInt $ 2, Atom . AtomInt $ 3])
 
         describe "quote" $ do
           it "should wrap the symbol" $ do

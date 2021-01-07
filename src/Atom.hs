@@ -37,7 +37,7 @@ instance Show Atom where
   show (AtomInt n) = show n
   show AtomNil = "Nil"
   show (AtomString s) = s
-  show (AtomSymbol s) = show s
+  show (AtomSymbol s) = "<symbol:" ++ show s ++ ">"
   show (AtomLabel s) = s
   show (AtomBool b) = if b then "T" else "F"
   show (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"

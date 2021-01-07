@@ -23,6 +23,7 @@
   - [X] Remove return value printing for evalation of file
   - [X] Allow using bindings inside definition. Eg - `(let ((a 1) (b (+ a 1))) (+ a b))`
   - [X] Support for 0 params function
+  - [X] Allow rest syntax for lambda
   - [ ] Negative ints
   - [ ] Floats
   - [ ] `quasiquote`, `unquote`

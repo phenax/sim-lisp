@@ -116,7 +116,7 @@ lambdaE :: Evaluator
 lambdaE scope = \case
   [SymbolExpression args, body] ->
     if all isSymbol args
-      then (\params -> (AtomLambda params body, scope)) <$> (toEither . rmergeM . map toSymbolString) args
+      then (\params -> (AtomLambda params body, scope)) <$> (toEither . mergeM . map toSymbolString) args
       else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
   _ -> withErr $ EvalError "Invalid `lambda` expression"
 
@@ -136,7 +136,7 @@ defineFunctionE :: Evaluator
 defineFunctionE scope = \case
   [Atom (AtomSymbol (Atom (AtomLabel name))), SymbolExpression args, body] ->
     if all isSymbol args
-      then fmap defineLambda . toEither . rmergeM . map toSymbolString $ args
+      then fmap defineLambda . toEither . mergeM . map toSymbolString $ args
       else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
     where
       defineLambda params =
@@ -199,7 +199,7 @@ evalE scope = \case
     expr <- evalExpressionPure scope expr
     case expr of
       AtomSymbol expr -> evalExpression scope expr
-      _ -> withErr $ EvalError $ "Invalid argument passed to `eval`"
+      _ -> withErr $ EvalError "Invalid argument passed to `eval`"
   _ -> withErr $ EvalError "Invalid number of arguments to `eval`"
 
 carE :: Evaluator
@@ -237,7 +237,15 @@ consE scope = \case
   _ -> withErr $ EvalError "Invalid number of arguments passed to `cons`"
 
 toScope :: [String] -> Scope -> [Expression] -> ExceptWithEvalError Scope
-toScope params scope args = (`Map.union` scope) . Map.fromList . zip params . map fst <$> evalConcat scope args
+toScope params scope args =
+  (`Map.union` scope) . Map.fromList . zipParams params . map fst <$> mergeM (map (evalExpression scope) args)
+  where
+    zipParams :: [String] -> [Atom] -> [(String, Atom)]
+    zipParams ps argValues = case ps of
+      [] -> []
+      [param] -> [(param, head argValues)]
+      ["...", restP] -> [(restP, AtomSymbol . SymbolExpression . map Atom $ argValues)]
+      (param : rest) -> (param, head argValues) : zipParams rest (tail argValues)
 
 applyLambda :: [String] -> Expression -> Evaluator
 applyLambda params body scope arguments = do
