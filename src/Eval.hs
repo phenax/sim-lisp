@@ -57,6 +57,7 @@ builtins =
     ("if", ifE),
     ("do", doblockE),
     ("declare", declareE),
+    ("apply", applyExpressionE),
     ("def", defineFunctionE),
     ("let", letbindingE),
     ("number?", isNumberE),
@@ -262,13 +263,18 @@ applyBuiltin :: String -> Scope -> [Expression] -> Maybe (ExceptWithEvalError (A
 applyBuiltin fn scope arguments =
   (\fn -> fn scope arguments) . snd <$> find ((==) fn . fst) builtins
 
-applyE :: String -> Evaluator
-applyE fn scope arguments =
+fnCallE :: String -> Evaluator
+fnCallE fn scope arguments =
   flatten $ applyAsSymbol fn scope arguments <|> applyBuiltin fn scope arguments
   where
     flatten = \case
       Just e -> e
-      Nothing -> withErr $ EvalError ("Not found boeey:: " ++ fn)
+      Nothing -> withErr $ EvalError ("Invalid function call : " ++ fn)
+
+applyExpressionE :: Evaluator
+applyExpressionE scope = \case
+  [fn, Atom (AtomSymbol (SymbolExpression args))] -> evalExpression scope $ SymbolExpression (fn : args)
+  _ -> withErr $ EvalError "Invalid syntax for apply"
 
 -- Evaluate expression without leaking scope
 evalExpressionPure :: Scope -> Expression -> EvalResultPure
@@ -286,7 +292,7 @@ evalExpression scope = \case
     let lst = tail exprs
      in case head exprs of
           -- TODO: predefined function as symbol
-          Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> applyE opSymbol scope lst
+          Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> fnCallE opSymbol scope lst
           SymbolExpression exprs ->
             evalExpressionPure scope (SymbolExpression exprs) >>= \case
               AtomLambda params body -> applyLambda params body scope lst

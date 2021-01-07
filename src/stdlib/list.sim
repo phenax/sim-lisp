@@ -15,6 +15,6 @@
     (fn (foldl fn init (cdr ls)) (car ls))
   ))
 
-(def sum (ls) (foldl + 0 ls))
-(def product (ls) (foldl * 1 ls))
+(def sum (ls) (apply + ls))
+(def product (ls) (apply + ls))
 

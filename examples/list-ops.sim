@@ -15,7 +15,7 @@
 
 (display "Length:" (length ls))
 
-(display "Sum:" (foldl + 0 ls))
+(display "Sum:" (sum ls))
 
 (display "Average:" (average ls))
 

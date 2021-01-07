@@ -262,4 +262,10 @@ evalExpressionTests = do
           it "should return nil" $ do
             eval "(display 1 \"hello\" 3 4)" `shouldReturn` Right AtomNil
 
+        describe "apply" $ do
+          it "should sum list of numbers" $ do
+            eval "(apply + '(1 4 5 2))" `shouldReturn` Right (AtomInt 12)
+          it "should check if eq" $ do
+            eval "(apply eq? '(5 5))" `shouldReturn` Right (AtomBool True)
+
 --

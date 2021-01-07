@@ -1,6 +1,6 @@
 (declare stdlib-loaded? T)
 
-(def identity (x) x)
+(def id (x) x)
 
 (def + (... rest) (foldl (lambda (a b) (add a b)) 0 rest))
 (def * (... rest) (foldl (lambda (a b) (mul a b)) 1 rest))
