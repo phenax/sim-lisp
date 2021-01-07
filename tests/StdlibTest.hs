@@ -11,6 +11,8 @@ import LParser
 import Test.Hspec
 import Text.RawString.QQ
 
+listExpression = AtomSymbol . SymbolExpression
+
 stdlibTests = do
   let eval = runExceptT . (evaluate <=< (except . tokenize))
    in describe "stdlib" $ do
@@ -78,6 +80,52 @@ stdlibTests = do
         describe "list#foldl" $ do
           it "should fold all items in list" $ do
             eval "(foldl - 0 '(5 4 3 2 1)))" `shouldReturn` Right (AtomInt (-15))
+
+        describe "list#concat" $ do
+          it "should concat lists" $ do
+            eval "(concat '(1 2) '(3 4))"
+              `shouldReturn` Right
+                ( listExpression
+                    [ Atom . AtomInt $ 1,
+                      Atom . AtomInt $ 2,
+                      Atom . AtomInt $ 3,
+                      Atom . AtomInt $ 4
+                    ]
+                )
+          it "should concat nil" $ do
+            eval "(concat '() '())" `shouldReturn` Right AtomNil
+
+        describe "list#append" $ do
+          it "should append 3 to list" $ do
+            eval "(append '(1 2) 3)" `shouldReturn` Right (listExpression [Atom . AtomInt $ 1, Atom . AtomInt $ 2, Atom . AtomInt $ 3])
+          it "should append to nil" $ do
+            eval "(append '() 3)" `shouldReturn` Right (listExpression [Atom . AtomInt $ 3])
+
+        describe "list#map" $ do
+          it "should map over list" $ do
+            eval "(map (lambda (x) (+ x 1)) '(5 4 3)))"
+              `shouldReturn` Right
+                ( listExpression
+                    [ Atom . AtomInt $ 6,
+                      Atom . AtomInt $ 5,
+                      Atom . AtomInt $ 4
+                    ]
+                )
+          it "should return Nil for empty list" $ do
+            eval "(map (lambda (x) (+ x 1)) '())" `shouldReturn` Right AtomNil
+
+        describe "list#filter" $ do
+          it "should filter list" $ do
+            eval "(filter (lambda (x) (<= x 10)) '(20 5 8 2 16))"
+              `shouldReturn` Right
+                ( listExpression
+                    [ Atom . AtomInt $ 5,
+                      Atom . AtomInt $ 8,
+                      Atom . AtomInt $ 2
+                    ]
+                )
+          it "should return Nil for empty list" $ do
+            eval "(filter (lambda (x) (>= x 1)) '())" `shouldReturn` Right AtomNil
 
         describe "list#null?" $ do
           it "should return false for list with any number of items" $ do

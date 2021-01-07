@@ -9,11 +9,24 @@
 (def concat (x y)
   (if (null? x) y (cons (car x) (concat (cdr x) y))))
 
+(def append (ls val) (concat ls (list val)))
+
 (def foldl (fn init ls)
   (if (null? ls)
     init
-    (fn (foldl fn init (cdr ls)) (car ls))
-  ))
+    (fn (foldl fn init (cdr ls)) (car ls))))
+
+(def map (fn ls)
+  (if (null? ls)
+    '()
+    (cons (fn (car ls)) (map fn (cdr ls)))))
+
+(def filter (fn ls)
+  (if (null? ls)
+    '()
+    (if (fn (car ls))
+      (cons (car ls) (filter fn (cdr ls)))
+      (filter fn (cdr ls)))))
 
 (def sum (ls) (apply + ls))
 (def product (ls) (apply + ls))
