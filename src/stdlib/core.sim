@@ -1,7 +1,24 @@
 (declare stdlib-loaded? T)
 
+(def identity (x) x)
+
+(def + (... rest) (foldl (lambda (a b) (add a b)) 0 rest))
+(def * (... rest) (foldl (lambda (a b) (mul a b)) 1 rest))
+(def - (a b) (sub a b))
+(def / (a b) (div a b))
+(def square (z) (* z z))
+
+; TODO: Allow n-args
+(def = (a b) (eq? a b))
+
 (def not (a) (if a F T))
 
 (def and (a b) (if a b F))
 (def or (a b) (if a T b))
+
+(def bigger (a b) (if (> a b) a b))
+(def smaller (a b) (if (< a b) a b))
+
+(def max (first ... ls) (foldl bigger first ls))
+(def min (first ... ls) (foldl smaller first ls))
 

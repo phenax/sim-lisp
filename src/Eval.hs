@@ -41,9 +41,9 @@ builtins :: [(String, Evaluator)]
 builtins =
   [ ("add", intBinaryOpt (+)),
     ("mul", intBinaryOpt (*)),
-    ("-", intBinaryOpt (-)),
-    ("/", intBinaryOpt div),
-    ("=", compare2E [EQ]),
+    ("sub", intBinaryOpt (-)),
+    ("div", intBinaryOpt div),
+    ("eq?", compare2E [EQ]),
     ("<", compare2E [LT]),
     ("<=", compare2E [LT, EQ]),
     (">", compare2E [GT]),

@@ -1,5 +1,7 @@
 
-(def null? (ls) (= Nil ls))
+(def null? (ls) (eq? Nil ls))
+
+(def list (... ls) ls)
 
 (def length (ls)
   (if (null? ls) 0 (+ 1 (length (cdr ls)))))
@@ -13,9 +15,6 @@
     (fn (foldl fn init (cdr ls)) (car ls))
   ))
 
-; (def-syntax and_
-;   ((and_) #t)
-;   ((and_ test) test)
-;   ((and_ test1 test2 ...)
-;    (if test1 (and_ test2 ...) #f)))
+(def sum (ls) (foldl + 0 ls))
+(def product (ls) (foldl * 1 ls))
 

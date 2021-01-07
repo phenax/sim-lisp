@@ -15,36 +15,13 @@ evalExpressionTests = do
   let -- eval :: (CIO.ConsoleIO io) => String -> io (Either Error Atom)
       eval = runExceptT . (evaluate <=< (except . tokenize))
    in describe "evalExpression" $ do
-        it "should be identity for single args" $ do
-          eval "(+ 5)" `shouldReturn` Right (AtomInt 5)
-          eval "(* 7)" `shouldReturn` Right (AtomInt 7)
-        it "should do basic 2 value math" $ do
-          eval "(+ 5 2)" `shouldReturn` Right (AtomInt 7)
-          eval "(+ 120 5)" `shouldReturn` Right (AtomInt 125)
-          eval "(- 120 5)" `shouldReturn` Right (AtomInt 115)
-          eval "(* 26 2)" `shouldReturn` Right (AtomInt 52)
-          eval "(/ 26 2)" `shouldReturn` Right (AtomInt 13)
-        it "should do nested computations" $ do
-          eval "(* 5 (+ 2) (- 11 2) (/ 10 5))" `shouldReturn` Right (AtomInt 180)
-        it "should do basic math for n-args" $ do
-          eval "(+ 10 2 3 6)" `shouldReturn` Right (AtomInt 21)
-          eval "(+ 120 5 21 1 1 6)" `shouldReturn` Right (AtomInt 154)
-          eval "(- 120 5)" `shouldReturn` Right (AtomInt 115)
-          eval "(* 26 2 10)" `shouldReturn` Right (AtomInt 520)
-          eval "(/ 26 2)" `shouldReturn` Right (AtomInt 13)
-        it "should emit eval error for invalid types" $ do
-          eval "(+ 10 \"fucking hell\" 5)" `shouldReturn` Left (EvalError "Invalid set of params")
-          eval "(+ 10 (+ 12 \"1\"))" `shouldReturn` Left (EvalError "Invalid set of params")
-        it "should allow overriding default operators" $ do
-          eval "(def + (a b) (* a b)) (+ 5 3)" `shouldReturn` Right (AtomInt 15)
-
         describe "bool operations" $ do
           it "should compare numbers correctly" $ do
             eval "(< 5 1)" `shouldReturn` Right (AtomBool False)
             eval "(< 1 5)" `shouldReturn` Right (AtomBool True)
             eval "(> 5 1)" `shouldReturn` Right (AtomBool True)
-            eval "(= 5 5)" `shouldReturn` Right (AtomBool True)
-            eval "(= 5 2)" `shouldReturn` Right (AtomBool False)
+            eval "(eq? 5 5)" `shouldReturn` Right (AtomBool True)
+            eval "(eq? 5 2)" `shouldReturn` Right (AtomBool False)
             eval "(> 5 5)" `shouldReturn` Right (AtomBool False)
             eval "(>= 5 5)" `shouldReturn` Right (AtomBool True)
             eval "(>= 5 2)" `shouldReturn` Right (AtomBool True)
