@@ -39,10 +39,10 @@ stdlibContent =
 
 builtins :: [(String, Evaluator)]
 builtins =
-  [ ("+", foldIntsE (+) 0),
-    ("-", foldIntsE (-) 0),
-    ("*", foldIntsE (*) 1),
-    ("/", foldIntsE div 1),
+  [ ("add", intBinaryOpt (+)),
+    ("mul", intBinaryOpt (*)),
+    ("-", intBinaryOpt (-)),
+    ("/", intBinaryOpt div),
     ("=", compare2E [EQ]),
     ("<", compare2E [LT]),
     ("<=", compare2E [LT, EQ]),
@@ -102,14 +102,12 @@ isNumberE = typeCheck $ \case
 evalConcat :: Scope -> [Expression] -> ExceptWithEvalError [(Atom, Scope)]
 evalConcat scope = rmergeM . map (evalExpression scope)
 
-foldIntsE :: (Integer -> Integer -> Integer) -> Integer -> Evaluator
-foldIntsE fn init scope expr = evalConcat scope expr >>= folder scope
+intBinaryOpt :: (Integer -> Integer -> Integer) -> Evaluator
+intBinaryOpt fn scope expr = evalConcat scope expr >>= runOp . map fst
   where
-    folder :: Scope -> [(Atom, Scope)] -> ExceptWithEvalError (Atom, Scope)
-    folder scope = \case
-      [] -> return (AtomInt init, scope)
-      [(AtomInt a, _)] -> return (AtomInt a, scope)
-      ((AtomInt a, currentScope) : tail) -> (,scope) . mapInt (`fn` a) . fst <$> folder currentScope tail
+    runOp :: [Atom] -> ExceptWithEvalError (Atom, Scope)
+    runOp = \case
+      [AtomInt a, AtomInt b] -> pure (AtomInt $ fn b a, scope)
       _ -> withErr $ EvalError "Invalid set of params"
 
 lambdaE :: Evaluator
@@ -236,8 +234,8 @@ consE scope = \case
       _ -> withErr $ EvalError "Invalid argument passed to `cons`"
   _ -> withErr $ EvalError "Invalid number of arguments passed to `cons`"
 
-toScope :: [String] -> Scope -> [Expression] -> ExceptWithEvalError Scope
-toScope params scope args =
+toLambdaScope :: [String] -> Scope -> [Expression] -> ExceptWithEvalError Scope
+toLambdaScope params scope args =
   (`Map.union` scope) . Map.fromList . zipParams params . map fst <$> mergeM (map (evalExpression scope) args)
   where
     zipParams :: [String] -> [Atom] -> [(String, Atom)]
@@ -249,7 +247,7 @@ toScope params scope args =
 
 applyLambda :: [String] -> Expression -> Evaluator
 applyLambda params body scope arguments = do
-  newScope <- toScope params scope arguments
+  newScope <- toLambdaScope params scope arguments
   result <- evalExpressionPure newScope body
   return (result, scope)
 

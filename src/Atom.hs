@@ -8,7 +8,7 @@ import Errors
 data Expression
   = Atom Atom
   | SymbolExpression [Expression]
-  deriving (Eq, Show)
+  deriving (Eq)
 
 data Atom
   = AtomNil
@@ -33,11 +33,15 @@ compareAtom _ _ = LT
 --compare (AtomBool b) = if b then "T" else "F"
 --compare (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"
 
+instance Show Expression where
+  show (SymbolExpression exprs) = "'(" ++ (unwords . map show) exprs ++ ")"
+  show (Atom a) = show a
+
 instance Show Atom where
   show (AtomInt n) = show n
   show AtomNil = "Nil"
   show (AtomString s) = s
-  show (AtomSymbol s) = "<symbol:" ++ show s ++ ">"
+  show (AtomSymbol s) = show s
   show (AtomLabel s) = s
   show (AtomBool b) = if b then "T" else "F"
   show (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"

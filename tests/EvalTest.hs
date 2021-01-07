@@ -17,9 +17,7 @@ evalExpressionTests = do
    in describe "evalExpression" $ do
         it "should be identity for single args" $ do
           eval "(+ 5)" `shouldReturn` Right (AtomInt 5)
-          eval "(- 6)" `shouldReturn` Right (AtomInt 6)
           eval "(* 7)" `shouldReturn` Right (AtomInt 7)
-          eval "(/ 8)" `shouldReturn` Right (AtomInt 8)
         it "should do basic 2 value math" $ do
           eval "(+ 5 2)" `shouldReturn` Right (AtomInt 7)
           eval "(+ 120 5)" `shouldReturn` Right (AtomInt 125)
@@ -31,9 +29,9 @@ evalExpressionTests = do
         it "should do basic math for n-args" $ do
           eval "(+ 10 2 3 6)" `shouldReturn` Right (AtomInt 21)
           eval "(+ 120 5 21 1 1 6)" `shouldReturn` Right (AtomInt 154)
-          eval "(- 120 5 100)" `shouldReturn` Right (AtomInt 15)
+          eval "(- 120 5)" `shouldReturn` Right (AtomInt 115)
           eval "(* 26 2 10)" `shouldReturn` Right (AtomInt 520)
-          eval "(/ 26 2 13)" `shouldReturn` Right (AtomInt 1)
+          eval "(/ 26 2)" `shouldReturn` Right (AtomInt 13)
         it "should emit eval error for invalid types" $ do
           eval "(+ 10 \"fucking hell\" 5)" `shouldReturn` Left (EvalError "Invalid set of params")
           eval "(+ 10 (+ 12 \"1\"))" `shouldReturn` Left (EvalError "Invalid set of params")
@@ -165,8 +163,7 @@ evalExpressionTests = do
                     x
                     (* x (fact (- x 1)))
                 )))
-
-               (fact 5)
+                (fact 5)
               |]
               `shouldReturn` Right (AtomInt 120)
           it "should create a lambda atom" $ do
@@ -180,9 +177,9 @@ evalExpressionTests = do
           it "should multiple lambdas" $ do
             eval
               [r|(let (
-                (mul (lambda (x) (* x 5)))
+                (mul5 (lambda (x) (* x 5)))
                 (incr (lambda (x) (+ x 1)))
-              ) (incr (mul 3)))
+              ) (incr (mul5 3)))
               |]
               `shouldReturn` Right (AtomInt 16)
           it "should shadow any variables outside scope" $ do

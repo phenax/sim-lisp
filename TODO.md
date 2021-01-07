@@ -24,12 +24,13 @@
   - [X] Allow using bindings inside definition. Eg - `(let ((a 1) (b (+ a 1))) (+ a b))`
   - [X] Support for 0 params function
   - [X] Allow rest syntax for lambda
+  - [X] `display`
+  - [ ] Dont evaluate function params if not being used
   - [ ] Negative ints
   - [ ] Floats
   - [ ] `quasiquote`, `unquote`
   - [ ] Variable number of args
   - [ ] String as list of chars
-  - [ ] `display`
   - [ ] `read`
   - [ ] Meta stuff (`define-syntax`)
   - [ ] `cond`
