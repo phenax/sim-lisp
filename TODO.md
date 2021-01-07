@@ -9,6 +9,7 @@
   - [X] Fix scope issue for lambda
   - [X] Fix repl to maintain global scope
   - [X] `def` - Define functions
+  - [X] `if`
   - [X] Comments
   - [X] Symbol String -> Symbol Expression
   - [X] `quote`
@@ -21,15 +22,22 @@
   - [X] Syntax for eval, quote
   - [X] Remove return value printing for evalation of file
   - [X] Allow using bindings inside definition. Eg - `(let ((a 1) (b (+ a 1))) (+ a b))`
+  - [X] Support for 0 params function
+  - [ ] Negative ints
+  - [ ] Floats
+  - [ ] `quasiquote`, `unquote`
+  - [ ] Variable number of args
+  - [ ] String as list of chars
+  - [ ] `display`
+  - [ ] `read`
+  - [ ] Meta stuff (`define-syntax`)
+  - [ ] `cond`
+  - [ ] Refactor `and`, `or` to use `define-syntax`
   - [ ] simple console io
   - [ ] Ignore comments instead of making them nil
-  - [ ] Variable number of args
-  - [ ] Meta stuff
-  - [ ] `quasiquote`, `unquote`
   - [ ] More error test cases
   - [ ] Generalize errors
   - [ ] Error line numbers
-  - [ ] Boolean helpers (`if`, `cond`, conditional combinators)
   - [ ] Make `=` work with any number of args
   - [ ] `import` - Import module
   - [ ] Allow negative and floats numbers

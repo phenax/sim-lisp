@@ -17,6 +17,7 @@ data Atom
   | AtomLabel String
   | AtomSymbol Expression
   | AtomLambda [String] Expression
+  | AtomSyntax String [(Expression, Expression)]
   | AtomString String
   deriving (Eq)
 
@@ -40,6 +41,7 @@ instance Show Atom where
   show (AtomLabel s) = s
   show (AtomBool b) = if b then "T" else "F"
   show (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"
+  show (AtomSyntax name _) = "<syntax:(" ++ name ++ " ...)>"
 
 type ExceptWithEvalError = ExceptT Error IO
 

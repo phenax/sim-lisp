@@ -22,3 +22,5 @@
 
 (display "Average:" (average ls))
 
+(display (concat ls '(7 8 9)))
+

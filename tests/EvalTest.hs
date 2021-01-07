@@ -200,6 +200,8 @@ evalExpressionTests = do
                     ( SymbolExpression [createLabel "+", createLabel "x", Atom (AtomInt 1)]
                     )
                 )
+          it "should allow 0 parameters" $ do
+            eval "(def fn () (* 2 5)) (fn)" `shouldReturn` Right (AtomInt 10)
 
         describe "quote" $ do
           it "should wrap the symbol" $ do

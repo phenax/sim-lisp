@@ -62,8 +62,20 @@ builtins =
     ("number?", isNumberE),
     ("boolean?", isBooleanE),
     ("display", displayE),
-    ("import", importE)
+    ("import", importE),
+    ("def-syntax", syntaxDefinitionE)
   ]
+
+syntaxDefinitionE :: Evaluator
+syntaxDefinitionE scope = \case
+  (Atom (AtomSymbol (Atom (AtomLabel name))) : syntaxes) ->
+    pure (syntax, Map.insert name syntax scope)
+    where
+      syntax = AtomSyntax name (map toSyntaxPair syntaxes)
+      toSyntaxPair = \case
+        SymbolExpression [SymbolExpression syntax, body] -> (SymbolExpression syntax, body)
+        _ -> (Atom AtomNil, Atom AtomNil)
+  _ -> withErr $ EvalError "Invalid syntax definition"
 
 displayE :: Evaluator
 displayE scope exprs = do
@@ -142,7 +154,7 @@ resolveScope sc binding = do
 letbindingE :: Evaluator
 letbindingE scope = \case
   [SymbolExpression params, expression] -> do
-    newScope <- let x = foldl resolveScope (pure scope) . map letPair $ params in x
+    newScope <- foldl resolveScope (pure scope) . map letPair $ params
     evalExpression newScope expression
   _ -> withErr $ EvalError "Invalid `let` expression"
 
@@ -224,13 +236,14 @@ consE scope = \case
       _ -> withErr $ EvalError "Invalid argument passed to `cons`"
   _ -> withErr $ EvalError "Invalid number of arguments passed to `cons`"
 
+toScope :: [String] -> Scope -> [Expression] -> ExceptWithEvalError Scope
+toScope params scope args = (`Map.union` scope) . Map.fromList . zip params . map fst <$> evalConcat scope args
+
 applyLambda :: [String] -> Expression -> Evaluator
-applyLambda params body scope arguments =
-  let toScope params = (`Map.union` scope) . Map.fromList . zip params . map fst <$> evalConcat scope arguments
-   in do
-        newScope <- toScope params
-        result <- evalExpressionPure newScope body
-        return (result, scope)
+applyLambda params body scope arguments = do
+  newScope <- toScope params scope arguments
+  result <- evalExpressionPure newScope body
+  return (result, scope)
 
 applyAsSymbol :: String -> Scope -> [Expression] -> Maybe (ExceptWithEvalError (Atom, Scope))
 applyAsSymbol fn scope arguments = evaluateValue <$> Map.lookup fn scope
@@ -263,16 +276,16 @@ evalExpression scope = \case
       Just value -> pure (value, scope)
       Nothing -> withErr $ EvalError $ "Variable " ++ k ++ " not found in scope"
     a -> pure (a, scope)
-  SymbolExpression (operation : lst) -> case operation of
-    -- TODO: predefined function as symbol
-    Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> applyE opSymbol scope lst
-    SymbolExpression exprs -> do
-      atom <- evalExpressionPure scope (SymbolExpression exprs)
-      case atom of
-        AtomLambda params body -> applyLambda params body scope lst
-        _ -> withErr $ EvalError "Invalid syntax"
-    _ -> withErr $ EvalError "TODO: Not impl 1"
-  _ -> withErr $ EvalError "TODO: Not impl out"
+  SymbolExpression exprs ->
+    let lst = tail exprs
+     in case head exprs of
+          -- TODO: predefined function as symbol
+          Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> applyE opSymbol scope lst
+          SymbolExpression exprs ->
+            evalExpressionPure scope (SymbolExpression exprs) >>= \case
+              AtomLambda params body -> applyLambda params body scope lst
+              _ -> withErr $ EvalError "Invalid syntax"
+          _ -> withErr $ EvalError "TODO: Not impl 1"
 
 evaluateWithScope :: Scope -> [Expression] -> EvalResult
 evaluateWithScope scope = evalExpression scope . SymbolExpression . (createLabel "do" :)

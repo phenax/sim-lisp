@@ -4,9 +4,18 @@
 (def length (ls)
   (if (null? ls) 0 (+ 1 (length (cdr ls)))))
 
+(def concat (x y)
+  (if (null? x) y (cons (car x) (concat (cdr x) y))))
+
 (def foldl (fn init ls)
   (if (null? ls)
     init
     (fn (foldl fn init (cdr ls)) (car ls))
   ))
+
+; (def-syntax and_
+;   ((and_) #t)
+;   ((and_ test) test)
+;   ((and_ test1 test2 ...)
+;    (if test1 (and_ test2 ...) #f)))
 
