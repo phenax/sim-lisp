@@ -37,12 +37,18 @@ stdlibTests = do
             eval "(+ 10 (+ 12 \"1\"))" `shouldReturn` Left (EvalError "Invalid set of params")
           it "should allow overriding default operators" $ do
             eval "(def + (a b) (* a b)) (+ 5 3)" `shouldReturn` Right (AtomInt 15)
-          xit "should check for equality for n-args" $ do
+          xit "should compare ints" $ do
             eval "(= 5 5)" `shouldReturn` Right (AtomBool True)
             eval "(= 5 2)" `shouldReturn` Right (AtomBool False)
-            eval "(= 5 5 5 5)" `shouldReturn` Right (AtomBool True)
-            eval "(= 5 5 5 1)" `shouldReturn` Right (AtomBool False)
-            eval "(= 5 1 5 5)" `shouldReturn` Right (AtomBool False)
+            eval "(< 5 1)" `shouldReturn` Right (AtomBool False)
+            eval "(< 1 5)" `shouldReturn` Right (AtomBool True)
+            eval "(> 5 1)" `shouldReturn` Right (AtomBool True)
+            eval "(> 5 5)" `shouldReturn` Right (AtomBool False)
+            eval "(>= 5 5)" `shouldReturn` Right (AtomBool True)
+            eval "(>= 5 2)" `shouldReturn` Right (AtomBool True)
+            eval "(< 5 5)" `shouldReturn` Right (AtomBool False)
+            eval "(<= 5 5)" `shouldReturn` Right (AtomBool True)
+            eval "(<= 2 5)" `shouldReturn` Right (AtomBool True)
 
         describe "core#and" $ do
           it "should and values" $ do

@@ -10,6 +10,10 @@
 
 ; TODO: Allow n-args
 (def = (a b) (eq? a b))
+(def > (a b) (gt? a b))
+(def >= (a b) (gte? a b))
+(def < (a b) (lt? a b))
+(def <= (a b) (lte? a b))
 
 (def not (a) (if a F T))
 

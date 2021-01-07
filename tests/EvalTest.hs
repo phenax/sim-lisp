@@ -17,17 +17,17 @@ evalExpressionTests = do
    in describe "evalExpression" $ do
         describe "bool operations" $ do
           it "should compare numbers correctly" $ do
-            eval "(< 5 1)" `shouldReturn` Right (AtomBool False)
-            eval "(< 1 5)" `shouldReturn` Right (AtomBool True)
-            eval "(> 5 1)" `shouldReturn` Right (AtomBool True)
+            eval "(lt? 5 1)" `shouldReturn` Right (AtomBool False)
+            eval "(lt? 1 5)" `shouldReturn` Right (AtomBool True)
+            eval "(gt? 5 1)" `shouldReturn` Right (AtomBool True)
             eval "(eq? 5 5)" `shouldReturn` Right (AtomBool True)
             eval "(eq? 5 2)" `shouldReturn` Right (AtomBool False)
-            eval "(> 5 5)" `shouldReturn` Right (AtomBool False)
-            eval "(>= 5 5)" `shouldReturn` Right (AtomBool True)
-            eval "(>= 5 2)" `shouldReturn` Right (AtomBool True)
-            eval "(< 5 5)" `shouldReturn` Right (AtomBool False)
-            eval "(<= 5 5)" `shouldReturn` Right (AtomBool True)
-            eval "(<= 2 5)" `shouldReturn` Right (AtomBool True)
+            eval "(gt? 5 5)" `shouldReturn` Right (AtomBool False)
+            eval "(gte? 5 5)" `shouldReturn` Right (AtomBool True)
+            eval "(gte? 5 2)" `shouldReturn` Right (AtomBool True)
+            eval "(lt? 5 5)" `shouldReturn` Right (AtomBool False)
+            eval "(lte? 5 5)" `shouldReturn` Right (AtomBool True)
+            eval "(lte? 2 5)" `shouldReturn` Right (AtomBool True)
           it "should compare string correctly" $ do
             eval [r|(> "hello" "hallo")|] `shouldReturn` Right (AtomBool True)
             eval [r|(> "h" "he")|] `shouldReturn` Right (AtomBool False)
