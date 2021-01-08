@@ -3,6 +3,8 @@
 (def id (x) x)
 (def const (x) (lambda () x))
 
+(def log (x y) (do (display x y) y))
+
 (def + (... rest) (foldl (lambda (a b) (add a b)) 0 rest))
 (def * (... rest) (foldl (lambda (a b) (mul a b)) 1 rest))
 (def - (first ... rest)
@@ -14,16 +16,17 @@
 (def % (a b) (mod a b))
 (def square (z) (* z z))
 
-(def cond (case ... rest)
+(def cond (case ... cases)
   (if (car case)
     (foldl (lambda (_ x) x) Nil (cdr case))
-    (apply cond rest)))
+    (apply cond cases)))
 (def else T)
 
-(def = (a ... rest)
-  (if (null? rest)
-    T
-    (if (eq? a (car rest)) (apply = rest) F)))
+(def = (a ... values) (cond
+  '((null? values) T)
+  '((eq? a (car values)) (apply = values))
+  '(else F)
+))
 
 (def > (a b) (gt? a b))
 (def >= (a b) (gte? a b))

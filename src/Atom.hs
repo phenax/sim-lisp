@@ -4,6 +4,7 @@ module Atom where
 
 import Control.Monad.Trans.Except
 import qualified Data.Map as Map
+import Debug.Trace
 import Errors
 
 type Scope = Map.Map String Atom

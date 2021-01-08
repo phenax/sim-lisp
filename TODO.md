@@ -28,6 +28,7 @@
   - [X] Negative ints
   - [X] Variable number of args
   - [X] Refactor to have scope stack instead of a flat scope
+  - [ ] Fix leaking scope issue for (function params conflict with scope variables)
   - [ ] Allow builtins to be first-class atoms
   - [ ] `quasiquote`, `unquote`
   - [ ] Improve repl

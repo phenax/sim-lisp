@@ -44,7 +44,8 @@ stdlibTests = do
             eval "(+ 10 (+ 12 \"1\"))" `shouldReturn` Left (EvalError "Invalid set of params")
           it "should allow overriding default operators" $ do
             eval "(def + (a b) (* a b)) (+ 5 3)" `shouldReturn` Right (AtomInt 15)
-          it "should compare ints" $ do
+          fit "should compare ints" $ do
+            eval "(= 6 5 4 3 2 1)" `shouldReturn` Right (AtomBool False)
             eval "(= 5 5)" `shouldReturn` Right (AtomBool True)
             eval "(= 5 2)" `shouldReturn` Right (AtomBool False)
             eval "(= 6 6 6 6 6)" `shouldReturn` Right (AtomBool True)
