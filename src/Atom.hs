@@ -8,7 +8,6 @@ import Errors
 
 type Scope = Map.Map String Atom
 
--- Technically a queue but fuck it
 type CallStack = [Scope]
 
 emptyScope = Map.empty
@@ -29,6 +28,13 @@ defineInScope key value = \case
   [] -> [Map.insert key value emptyScope]
   [scope] -> [Map.insert key value scope]
   (scope : stack) -> Map.insert key value scope : stack
+
+mergeCallStack :: CallStack -> CallStack -> CallStack
+mergeCallStack [] [] = []
+mergeCallStack x [] = x
+mergeCallStack [] x = x
+mergeCallStack closure calling =
+  mergeCallStack (init closure) (init calling) ++ [Map.union (last calling) (last closure)]
 
 data Expression
   = Atom Atom

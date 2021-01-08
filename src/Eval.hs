@@ -136,7 +136,7 @@ resolveScope sc binding = do
 letbindingE :: Evaluator
 letbindingE callstack = \case
   [SymbolExpression params, expression] -> do
-    new <- foldl resolveScope (pure callstack) . map letPair $ params
+    new <- foldl resolveScope (pure $ pushToStack callstack emptyScope) . map letPair $ params
     evalExpression new expression
   _ -> withErr $ EvalError "Invalid `let` expression"
 
@@ -243,7 +243,7 @@ applyAsSymbol :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalErr
 applyAsSymbol fn callstack arguments = evaluateValue <$> findDefinition fn callstack
   where
     evaluateValue = \case
-      AtomLambda _closure params body -> applyLambda params body callstack arguments
+      AtomLambda closureStack params body -> applyLambda params body (mergeCallStack closureStack callstack) arguments
       _ -> withErr $ EvalError ("Invalid call. `" ++ fn ++ "` is not a function")
 
 applyBuiltin :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalError (Atom, CallStack))
@@ -286,7 +286,7 @@ evalExpression callstack = \case
           Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> fnCallE opSymbol callstack lst
           SymbolExpression exprs ->
             evalExpressionPure callstack (SymbolExpression exprs) >>= \case
-              AtomLambda _closure params body -> applyLambda params body callstack lst
+              AtomLambda closureStack params body -> applyLambda params body (mergeCallStack closureStack callstack) lst
               _ -> withErr $ EvalError "Invalid syntax"
           _ -> withErr $ EvalError "TODO: Not impl 1"
 

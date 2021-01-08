@@ -5,11 +5,14 @@ module EvalTest where
 import Atom
 import Control.Monad
 import Control.Monad.Trans.Except
+import qualified Data.Map as Map
 import Errors
 import Eval
 import LParser
 import Test.Hspec
 import Text.RawString.QQ
+
+listExpr = AtomSymbol . SymbolExpression
 
 evalExpressionTests = do
   let -- eval :: (CIO.ConsoleIO io) => String -> io (Either Error Atom)
@@ -151,13 +154,7 @@ evalExpressionTests = do
               |]
               `shouldReturn` Right (AtomInt 120)
           it "should create a lambda atom" $ do
-            eval "(lambda (x) (+ x 1))"
-              `shouldReturn` Right
-                ( AtomLambda
-                    ["x"]
-                    ( SymbolExpression [createLabel "+", createLabel "x", Atom (AtomInt 1)]
-                    )
-                )
+            eval "((lambda (x) (+ x 1)) 20)" `shouldReturn` Right (AtomInt 21)
           it "should multiple lambdas" $ do
             eval
               [r|(let (
@@ -173,14 +170,6 @@ evalExpressionTests = do
                 (incr 10)
               |]
               `shouldReturn` Right (AtomInt 11)
-          it "should create a lambda atom" $ do
-            eval "(lambda (x) (+ x 1))"
-              `shouldReturn` Right
-                ( AtomLambda
-                    ["x"]
-                    ( SymbolExpression [createLabel "+", createLabel "x", Atom (AtomInt 1)]
-                    )
-                )
           it "should allow 0 parameters" $ do
             eval "(def fn () (* 2 5)) (fn)" `shouldReturn` Right (AtomInt 10)
           it "should allow accessing the rest of the params with ... symbol syntax" $ do
@@ -306,5 +295,33 @@ evalExpressionTests = do
             eval "(apply eq? '(5 5))" `shouldReturn` Right (AtomBool True)
           it "should evaluate value first" $ do
             eval "(apply eq? (concat '(5) '(5)))" `shouldReturn` Right (AtomBool True)
+
+        describe "function properties" $ do
+          it "should maintain closure" $ do
+            eval
+              [r|
+                (def multiply (v1) (lambda (v2) (* v1 v2)))
+                ((multiply 3) 4)
+              |]
+              `shouldReturn` Right (AtomInt 12)
+          it "should prefer internal variable over external closure" $ do
+            eval
+              [r|
+                (declare v1 17)
+                (declare v2 33)
+                (def multiply (v1) (lambda (v2) (* v1 v2)))
+                ((multiply 3) 4)
+              |]
+              `shouldReturn` Right (AtomInt 12)
+          it "should use the right variables in the stack" $ do
+            eval
+              [r|
+                (declare a 10)
+                (declare e 10)
+                (def fn (a b) (lambda (b c) (lambda (c d) (list a b c d e))))
+                (declare e 20)
+                (((fn 1 2) 3 4) 5 6)
+              |]
+              `shouldReturn` Right (listExpr $ map (Atom . AtomInt) [1, 3, 5, 6, 20])
 
 --
