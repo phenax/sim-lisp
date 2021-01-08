@@ -3,7 +3,32 @@
 module Atom where
 
 import Control.Monad.Trans.Except
+import qualified Data.Map as Map
 import Errors
+
+type Scope = Map.Map String Atom
+
+-- Technically a queue but fuck it
+type CallStack = [Scope]
+
+emptyScope = Map.empty
+
+emptyCallStack = [emptyScope]
+
+findDefinition :: String -> CallStack -> Maybe Atom
+findDefinition key [] = Nothing
+findDefinition key (scope : stack) = case Map.lookup key scope of
+  Just result -> Just result
+  Nothing -> findDefinition key stack
+
+pushToStack :: CallStack -> Scope -> CallStack
+pushToStack cs s = s : cs
+
+defineInScope :: String -> Atom -> CallStack -> CallStack
+defineInScope key value = \case
+  [] -> [Map.insert key value emptyScope]
+  [scope] -> [Map.insert key value scope]
+  (scope : stack) -> Map.insert key value scope : stack
 
 data Expression
   = Atom Atom
@@ -20,7 +45,7 @@ data Atom
   | AtomBool Bool
   | AtomLabel String
   | AtomSymbol Expression
-  | AtomLambda [String] Expression
+  | AtomLambda CallStack [String] Expression
   | AtomSyntax String [(Expression, Expression)]
   | AtomString String
   deriving (Eq)
@@ -39,7 +64,7 @@ instance Show Atom where
   show (AtomSymbol s) = show s
   show (AtomLabel s) = s
   show (AtomBool b) = if b then "T" else "F"
-  show (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"
+  show (AtomLambda _ props _expr) = "<lambda:(" ++ show props ++ ")>"
   show (AtomSyntax name _) = "<syntax:(" ++ name ++ " ...)>"
 
 type ExceptWithEvalError = ExceptT Error IO

@@ -19,15 +19,11 @@ import Errors
 import LParser
 import Utils
 
-type Scope = Map.Map String Atom
-
-emptyScope = Map.empty
-
 type EvalResultPure = ExceptWithEvalError Atom
 
-type EvalResult = ExceptWithEvalError (Atom, Scope)
+type EvalResult = ExceptWithEvalError (Atom, CallStack)
 
-type Evaluator = Scope -> [Expression] -> EvalResult
+type Evaluator = CallStack -> [Expression] -> EvalResult
 
 stdlibContent :: String
 stdlibContent =
@@ -65,33 +61,21 @@ builtins =
     ("number?", isNumberE),
     ("boolean?", isBooleanE),
     ("display", displayE),
-    ("import", importE),
-    ("def-syntax", syntaxDefinitionE)
+    ("import", importE)
   ]
 
-syntaxDefinitionE :: Evaluator
-syntaxDefinitionE scope = \case
-  (Atom (AtomSymbol (Atom (AtomLabel name))) : syntaxes) ->
-    pure (syntax, Map.insert name syntax scope)
-    where
-      syntax = AtomSyntax name (map toSyntaxPair syntaxes)
-      toSyntaxPair = \case
-        SymbolExpression [SymbolExpression syntax, body] -> (SymbolExpression syntax, body)
-        _ -> (Atom AtomNil, Atom AtomNil)
-  _ -> withErr $ EvalError "Invalid syntax definition"
-
 displayE :: Evaluator
-displayE scope exprs = do
-  result <- foldl monadAppend (pure []) . map (fmap show . evalExpressionPure scope) $ exprs
+displayE callstack exprs = do
+  result <- foldl monadAppend (pure []) . map (fmap show . evalExpressionPure callstack) $ exprs
   liftExceptT . ConsoleIO.putStrLn . unwords $ result
-  return (AtomNil, scope)
+  return (AtomNil, callstack)
 
 typeCheck :: (Atom -> Bool) -> Evaluator
-typeCheck check scope = \case
+typeCheck check callstack = \case
   (head : _) -> do
-    result <- evalExpressionPure scope head
-    return (AtomBool (check result), scope)
-  _ -> pure (AtomBool False, scope)
+    result <- evalExpressionPure callstack head
+    return (AtomBool (check result), callstack)
+  _ -> pure (AtomBool False, callstack)
 
 isBooleanE = typeCheck $ \case
   AtomBool _ -> True
@@ -102,140 +86,140 @@ isNumberE = typeCheck $ \case
   AtomInt _ -> True
   _ -> False
 
-evalConcat :: Scope -> [Expression] -> ExceptWithEvalError [(Atom, Scope)]
-evalConcat scope = rconcatM . map (evalExpression scope)
+evalConcat :: CallStack -> [Expression] -> ExceptWithEvalError [(Atom, CallStack)]
+evalConcat callstack = rconcatM . map (evalExpression callstack)
 
 intBinaryOpt :: (Integer -> Integer -> Integer) -> (Integer -> Integer) -> Evaluator
-intBinaryOpt binaryOp unaryOp scope expr = evalConcat scope expr >>= runOp . map fst
+intBinaryOpt binaryOp unaryOp callstack expr = evalConcat callstack expr >>= runOp . map fst
   where
-    runOp :: [Atom] -> ExceptWithEvalError (Atom, Scope)
+    runOp :: [Atom] -> ExceptWithEvalError (Atom, CallStack)
     runOp = \case
-      [AtomInt a, AtomInt b] -> pure (AtomInt $ binaryOp b a, scope)
-      [AtomInt a] -> pure (AtomInt $ unaryOp a, scope)
+      [AtomInt a, AtomInt b] -> pure (AtomInt $ binaryOp b a, callstack)
+      [AtomInt a] -> pure (AtomInt $ unaryOp a, callstack)
       _ -> withErr $ EvalError "Invalid set of params"
 
-lambdaE :: Evaluator
-lambdaE scope = \case
-  [SymbolExpression args, body] ->
-    if all isSymbol args
-      then (\params -> (AtomLambda params body, scope)) <$> (toEither . concatM . map toSymbolString) args
-      else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
-  _ -> withErr $ EvalError "Invalid `lambda` expression"
-
 doblockE :: Evaluator
-doblockE scope = foldl evaluateExpr (pure (AtomInt 0, scope))
+doblockE callstack = foldl evaluateExpr (pure (AtomInt 0, callstack))
   where
     evaluateExpr :: EvalResult -> Expression -> EvalResult
     evaluateExpr result expr = result >>= (`evalExpression` expr) . snd
 
+lambdaE :: Evaluator
+lambdaE callstack = \case
+  [SymbolExpression args, body] ->
+    if all isSymbol args
+      then (\params -> (AtomLambda callstack params body, callstack)) <$> (toEither . concatM . map toSymbolString) args
+      else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
+  _ -> withErr $ EvalError "Invalid `lambda` expression"
+
 defineFunctionE :: Evaluator
-defineFunctionE scope = \case
+defineFunctionE callstack = \case
   [Atom (AtomSymbol (Atom (AtomLabel k))), expr] ->
-    (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
+    (\value -> (value, defineInScope k value callstack)) <$> evalExpressionPure callstack expr
   [Atom (AtomSymbol (Atom (AtomLabel name))), SymbolExpression args, body] ->
     if all isSymbol args
       then fmap defineLambda . toEither . concatM . map toSymbolString $ args
       else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
     where
       defineLambda params =
-        let lambda = AtomLambda params body
-         in (lambda, Map.insert name lambda scope)
+        let lambda = AtomLambda callstack params body
+         in (lambda, defineInScope name lambda callstack)
   _ -> withErr $ EvalError "Invalid `def` expression"
 
-resolveScope :: ExceptWithEvalError Scope -> ExceptWithEvalError (String, Expression) -> ExceptWithEvalError Scope
+resolveScope :: ExceptWithEvalError CallStack -> ExceptWithEvalError (String, Expression) -> ExceptWithEvalError CallStack
 resolveScope sc binding = do
-  scope' <- sc
+  callstack <- sc
   (name, expr) <- binding
-  value <- evalExpressionPure scope' expr
-  return $ Map.insert name value scope'
+  value <- evalExpressionPure callstack expr
+  return $ defineInScope name value callstack
 
 letbindingE :: Evaluator
-letbindingE scope = \case
+letbindingE callstack = \case
   [SymbolExpression params, expression] -> do
-    newScope <- foldl resolveScope (pure scope) . map letPair $ params
-    evalExpression newScope expression
+    new <- foldl resolveScope (pure callstack) . map letPair $ params
+    evalExpression new expression
   _ -> withErr $ EvalError "Invalid `let` expression"
 
 -- TODO: Implement after io setup
 importE :: Evaluator
-importE scope = \case
+importE callstack = \case
   [Atom (AtomString file)] -> withErr $ EvalError "TODO: Import impl"
   _ -> withErr $ EvalError "Invalid import expression"
 
 ifE :: Evaluator
-ifE scope = \case
+ifE callstack = \case
   [exp1, thenBody, elseBody] ->
     let isTruthy = \case
           AtomBool x -> x
           AtomNil -> False
           _ -> True
      in do
-          condAtom <- evalExpressionPure scope exp1
-          result <- evalExpressionPure scope (if isTruthy condAtom then thenBody else elseBody)
-          return (result, scope)
+          condAtom <- evalExpressionPure callstack exp1
+          result <- evalExpressionPure callstack (if isTruthy condAtom then thenBody else elseBody)
+          return (result, callstack)
   _ -> withErr $ EvalError "Invalid number of arguments"
 
 compare2E :: [Ordering] -> Evaluator
-compare2E ordering scope = \case
+compare2E ordering callstack = \case
   [exp1, exp2] -> do
-    a <- evalExpressionPure scope exp1
-    b <- evalExpressionPure scope exp2
-    return (AtomBool (check a b), scope)
+    a <- evalExpressionPure callstack exp1
+    b <- evalExpressionPure callstack exp2
+    return (AtomBool (check a b), callstack)
     where
       check = \a b -> compare a b `elem` ordering
   _ -> withErr $ EvalError "Invalid number of arguments passed for comparison"
 
 quoteE :: Evaluator
-quoteE scope = \case
-  [SymbolExpression []] -> pure (AtomNil, scope)
-  [expr] -> pure (AtomSymbol expr, scope)
+quoteE callstack = \case
+  [SymbolExpression []] -> pure (AtomNil, callstack)
+  [expr] -> pure (AtomSymbol expr, callstack)
   _ -> withErr $ EvalError "Invalid number of arguments to `quote`"
 
 evalE :: Evaluator
-evalE scope = \case
+evalE callstack = \case
   [expr] -> do
-    expr <- evalExpressionPure scope expr
+    expr <- evalExpressionPure callstack expr
     case expr of
-      AtomSymbol expr -> evalExpression scope expr
+      AtomSymbol expr -> evalExpression callstack expr
       _ -> withErr $ EvalError "Invalid argument passed to `eval`"
   _ -> withErr $ EvalError "Invalid number of arguments to `eval`"
 
 carE :: Evaluator
-carE scope = \case
+carE callstack = \case
   [expr] -> do
-    expr <- evalExpressionPure scope expr
+    expr <- evalExpressionPure callstack expr
     case expr of
-      AtomNil -> pure (AtomNil, scope)
-      AtomSymbol (SymbolExpression []) -> pure (AtomNil, scope)
-      AtomSymbol (SymbolExpression (h : _lst)) -> evalExpression scope h
+      AtomNil -> pure (AtomNil, callstack)
+      AtomSymbol (SymbolExpression []) -> pure (AtomNil, callstack)
+      AtomSymbol (SymbolExpression (h : _lst)) -> evalExpression callstack h
       _ -> withErr $ EvalError "Invalid argument passed to `car`"
   _ -> withErr $ EvalError "Invalid number of arguments passed to `car`"
 
 cdrE :: Evaluator
-cdrE scope = \case
+cdrE callstack = \case
   [expr] -> do
-    expr <- evalExpressionPure scope expr
+    expr <- evalExpressionPure callstack expr
     case expr of
-      AtomNil -> pure (AtomNil, scope)
-      AtomSymbol (SymbolExpression []) -> pure (AtomNil, scope)
-      AtomSymbol (SymbolExpression [_h]) -> pure (AtomNil, scope)
-      AtomSymbol (SymbolExpression (_h : lst)) -> pure (AtomSymbol $ SymbolExpression lst, scope)
+      AtomNil -> pure (AtomNil, callstack)
+      AtomSymbol (SymbolExpression []) -> pure (AtomNil, callstack)
+      AtomSymbol (SymbolExpression [_h]) -> pure (AtomNil, callstack)
+      AtomSymbol (SymbolExpression (_h : lst)) -> pure (AtomSymbol $ SymbolExpression lst, callstack)
       _ -> withErr $ EvalError "Invalid argument passed to `cdr`"
   _ -> withErr $ EvalError "Invalid number of arguments passed to `cdr`"
 
 consE :: Evaluator
-consE scope = \case
-  [expr1, expr2] -> mMerge2 prependAtoms (evalExpressionPure scope expr1) (evalExpressionPure scope expr2)
+consE callstack = \case
+  [expr1, expr2] -> mMerge2 prependAtoms (evalExpressionPure callstack expr1) (evalExpressionPure callstack expr2)
     where
       prependAtoms a b = case b of
-        AtomNil -> pure (AtomSymbol $ SymbolExpression [Atom a], scope)
-        AtomSymbol (SymbolExpression ls) -> pure (AtomSymbol $ SymbolExpression $ Atom a : ls, scope)
+        AtomNil -> pure (AtomSymbol $ SymbolExpression [Atom a], callstack)
+        AtomSymbol (SymbolExpression ls) -> pure (AtomSymbol $ SymbolExpression $ Atom a : ls, callstack)
         _ -> withErr $ EvalError "Invalid argument passed to `cons`"
   _ -> withErr $ EvalError "Invalid number of arguments passed to `cons`"
 
-toLambdaScope :: [String] -> Scope -> [Expression] -> ExceptWithEvalError Scope
-toLambdaScope params scope args =
-  (`Map.union` scope) . Map.fromList . zipParams params . map fst <$> concatM (map (evalExpression scope) args)
+lambdaClosure :: [String] -> CallStack -> [Expression] -> ExceptWithEvalError CallStack
+lambdaClosure params callstack args =
+  pushToStack callstack . Map.fromList . zipParams params . map fst <$> concatM (map (evalExpression callstack) args)
   where
     zipParams :: [String] -> [Atom] -> [(String, Atom)]
     zipParams ps argValues = case ps of
@@ -250,77 +234,77 @@ toLambdaScope params scope args =
       (param : rest) -> (param, head argValues) : zipParams rest (tail argValues)
 
 applyLambda :: [String] -> Expression -> Evaluator
-applyLambda params body scope arguments = do
-  newScope <- toLambdaScope params scope arguments
-  result <- evalExpressionPure newScope body
-  return (result, scope)
+applyLambda params body callstack arguments = do
+  new <- lambdaClosure params callstack arguments
+  result <- evalExpressionPure new body
+  return (result, callstack)
 
-applyAsSymbol :: String -> Scope -> [Expression] -> Maybe (ExceptWithEvalError (Atom, Scope))
-applyAsSymbol fn scope arguments = evaluateValue <$> Map.lookup fn scope
+applyAsSymbol :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalError (Atom, CallStack))
+applyAsSymbol fn callstack arguments = evaluateValue <$> findDefinition fn callstack
   where
     evaluateValue = \case
-      AtomLambda params body -> applyLambda params body scope arguments
+      AtomLambda _closure params body -> applyLambda params body callstack arguments
       _ -> withErr $ EvalError ("Invalid call. `" ++ fn ++ "` is not a function")
 
-applyBuiltin :: String -> Scope -> [Expression] -> Maybe (ExceptWithEvalError (Atom, Scope))
-applyBuiltin fn scope arguments =
-  (\fn -> fn scope arguments) . snd <$> find ((==) fn . fst) builtins
+applyBuiltin :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalError (Atom, CallStack))
+applyBuiltin fn callstack arguments =
+  (\fn -> fn callstack arguments) . snd <$> find ((==) fn . fst) builtins
 
 fnCallE :: String -> Evaluator
-fnCallE fn scope arguments =
-  flatten $ applyAsSymbol fn scope arguments <|> applyBuiltin fn scope arguments
+fnCallE fn callstack arguments =
+  flatten $ applyAsSymbol fn callstack arguments <|> applyBuiltin fn callstack arguments
   where
     flatten = \case
       Just e -> e
       Nothing -> withErr $ EvalError ("Invalid function call : " ++ fn)
 
 applyExpressionE :: Evaluator
-applyExpressionE scope = \case
+applyExpressionE callstack = \case
   [fn, arguments] -> do
-    argType <- evalExpressionPure scope arguments
+    argType <- evalExpressionPure callstack arguments
     case argType of
-      AtomSymbol (SymbolExpression args) -> evalExpression scope $ SymbolExpression (fn : args)
+      AtomSymbol (SymbolExpression args) -> evalExpression callstack $ SymbolExpression (fn : args)
       _ -> withErr $ EvalError "Invalid args: apply expected a list of arguments"
   ls -> withErr $ EvalError ("Invalid number of arguments passed to apply::" ++ show ls)
 
 -- Evaluate expression without leaking scope
-evalExpressionPure :: Scope -> Expression -> EvalResultPure
-evalExpressionPure scope = fmap fst . evalExpression scope
+evalExpressionPure :: CallStack -> Expression -> EvalResultPure
+evalExpressionPure callstack = fmap fst . evalExpression callstack
 
 -- Evaluate expression with leaked scope
-evalExpression :: Scope -> Expression -> EvalResult
-evalExpression scope = \case
+evalExpression :: CallStack -> Expression -> EvalResult
+evalExpression callstack = \case
   Atom atom -> case atom of
-    AtomSymbol (Atom (AtomLabel k)) -> case Map.lookup k scope of
-      Just value -> pure (value, scope)
+    AtomSymbol (Atom (AtomLabel k)) -> case findDefinition k callstack of
+      Just value -> pure (value, callstack)
       Nothing -> withErr $ EvalError $ "Variable " ++ k ++ " not found in scope"
-    a -> pure (a, scope)
+    a -> pure (a, callstack)
   SymbolExpression exprs ->
     let lst = tail exprs
      in case head exprs of
           -- TODO: predefined function as symbol
-          Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> fnCallE opSymbol scope lst
+          Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> fnCallE opSymbol callstack lst
           SymbolExpression exprs ->
-            evalExpressionPure scope (SymbolExpression exprs) >>= \case
-              AtomLambda params body -> applyLambda params body scope lst
+            evalExpressionPure callstack (SymbolExpression exprs) >>= \case
+              AtomLambda _closure params body -> applyLambda params body callstack lst
               _ -> withErr $ EvalError "Invalid syntax"
           _ -> withErr $ EvalError "TODO: Not impl 1"
 
-evaluateWithScope :: Scope -> [Expression] -> EvalResult
-evaluateWithScope scope = evalExpression scope . SymbolExpression . (createLabel "do" :)
+evaluateWithScope :: CallStack -> [Expression] -> EvalResult
+evaluateWithScope callstack = evalExpression callstack . SymbolExpression . (createLabel "do" :)
 
-loadLibraryIntoScope :: String -> Scope -> ExceptWithEvalError Scope
-loadLibraryIntoScope stdlibStr scope = snd <$> (except (tokenize stdlibStr) >>= evaluateWithScope scope)
+loadLibraryInto :: String -> CallStack -> ExceptWithEvalError CallStack
+loadLibraryInto stdlibStr callstack = snd <$> (except (tokenize stdlibStr) >>= evaluateWithScope callstack)
 
-evaluateWithStdlib :: Scope -> [Expression] -> EvalResult
-evaluateWithStdlib parentScope exprs = do
-  scope <- loadLibraryIntoScope stdlibContent parentScope
-  evaluateWithScope scope exprs
+evaluateWithStdlib :: CallStack -> [Expression] -> EvalResult
+evaluateWithStdlib parent exprs = do
+  callstack <- loadLibraryInto stdlibContent parent
+  evaluateWithScope callstack exprs
 
 evaluate :: [Expression] -> EvalResultPure
-evaluate exprs = fst <$> evaluateWithStdlib emptyScope exprs
+evaluate exprs = fst <$> evaluateWithStdlib emptyCallStack exprs
 
-interpret :: Scope -> String -> EvalResult
-interpret scope = evaluateWithStdlib scope <=< except . tokenize
+interpret :: CallStack -> String -> EvalResult
+interpret callstack = evaluateWithStdlib callstack <=< except . tokenize
 
 --
