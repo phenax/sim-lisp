@@ -85,6 +85,9 @@ stdlibTests = do
         describe "list#foldl" $ do
           it "should fold all items in list" $ do
             eval "(foldl - 0 '(5 4 3 2 1)))" `shouldReturn` Right (AtomInt (-15))
+        describe "list#foldr" $ do
+          it "should fold all items in list" $ do
+            eval "(foldr - 0 '(5 4 3 2 1)))" `shouldReturn` Right (AtomInt 3)
 
         describe "list#concat" $ do
           it "should concat lists" $ do

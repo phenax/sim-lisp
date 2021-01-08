@@ -28,6 +28,7 @@
   - [X] Negative ints
   - [X] Variable number of args
   - [ ] `quasiquote`, `unquote`
+  - [ ] Improve repl
   - [ ] Curry/Partially apply function
   - [ ] Curry/Partial application syntax?
   - [ ] Floats

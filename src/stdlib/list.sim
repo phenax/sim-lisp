@@ -16,6 +16,11 @@
     init
     (fn (foldl fn init (cdr ls)) (car ls))))
 
+(def foldr (fn last ls)
+  (if (null? ls)
+	  last
+	  (fn (car ls) (foldr fn last (cdr ls)))))
+
 (def map (fn ls)
   (if (null? ls)
     '()
