@@ -10,6 +10,10 @@ data Expression
   | SymbolExpression [Expression]
   deriving (Eq)
 
+instance Show Expression where
+  show (SymbolExpression exprs) = "'(" ++ (unwords . map show) exprs ++ ")"
+  show (Atom a) = show a
+
 data Atom
   = AtomNil
   | AtomInt Integer
@@ -21,21 +25,12 @@ data Atom
   | AtomString String
   deriving (Eq)
 
-compareAtom (AtomInt a) (AtomInt b) = compare a b
-compareAtom (AtomString a) (AtomString b) = compare a b
-compareAtom (AtomBool a) (AtomBool b) = compare a b
-compareAtom AtomNil AtomNil = EQ
-compareAtom _ _ = LT
-
---compare (AtomString s) = "\"" ++ s ++ "\""
---compare (AtomList exprs) = "(" ++ (unwords . map show $ exprs) ++ ")"
---compare (AtomSymbol s) = s
---compare (AtomBool b) = if b then "T" else "F"
---compare (AtomLambda props _expr) = "<lambda:(" ++ show props ++ ")>"
-
-instance Show Expression where
-  show (SymbolExpression exprs) = "'(" ++ (unwords . map show) exprs ++ ")"
-  show (Atom a) = show a
+instance Ord Atom where
+  compare (AtomInt a) (AtomInt b) = compare a b
+  compare (AtomString a) (AtomString b) = compare a b
+  compare (AtomBool a) (AtomBool b) = compare a b
+  compare AtomNil AtomNil = EQ
+  compare _ _ = LT
 
 instance Show Atom where
   show (AtomInt n) = show n

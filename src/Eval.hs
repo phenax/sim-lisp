@@ -182,7 +182,7 @@ compare2E ordering scope = \case
     b <- evalExpressionPure scope exp2
     return (AtomBool (check a b), scope)
     where
-      check = \a b -> compareAtom a b `elem` ordering
+      check = \a b -> compare a b `elem` ordering
   _ -> withErr $ EvalError "Invalid number of arguments passed for comparison"
 
 quoteE :: Evaluator
@@ -225,13 +225,12 @@ cdrE scope = \case
 
 consE :: Evaluator
 consE scope = \case
-  [expr1, expr2] -> do
-    a <- evalExpressionPure scope expr1
-    b <- evalExpressionPure scope expr2
-    case b of
-      AtomNil -> pure (AtomSymbol $ SymbolExpression [Atom a], scope)
-      AtomSymbol (SymbolExpression ls) -> pure (AtomSymbol $ SymbolExpression $ Atom a : ls, scope)
-      _ -> withErr $ EvalError "Invalid argument passed to `cons`"
+  [expr1, expr2] -> mMerge2 prependAtoms (evalExpressionPure scope expr1) (evalExpressionPure scope expr2)
+    where
+      prependAtoms a b = case b of
+        AtomNil -> pure (AtomSymbol $ SymbolExpression [Atom a], scope)
+        AtomSymbol (SymbolExpression ls) -> pure (AtomSymbol $ SymbolExpression $ Atom a : ls, scope)
+        _ -> withErr $ EvalError "Invalid argument passed to `cons`"
   _ -> withErr $ EvalError "Invalid number of arguments passed to `cons`"
 
 toLambdaScope :: [String] -> Scope -> [Expression] -> ExceptWithEvalError Scope
@@ -244,7 +243,10 @@ toLambdaScope params scope args =
       [param] -> [(param, head argValues)]
       ["...", restP] -> [(restP, listExpr)]
         where
-          listExpr = if null argValues then AtomNil else AtomSymbol . SymbolExpression . map Atom $ argValues
+          listExpr =
+            if null argValues
+              then AtomNil
+              else AtomSymbol . SymbolExpression . map Atom $ argValues
       (param : rest) -> (param, head argValues) : zipParams rest (tail argValues)
 
 applyLambda :: [String] -> Expression -> Evaluator
@@ -307,12 +309,12 @@ evalExpression scope = \case
 evaluateWithScope :: Scope -> [Expression] -> EvalResult
 evaluateWithScope scope = evalExpression scope . SymbolExpression . (createLabel "do" :)
 
-loadLibraryIntoScope :: Scope -> ExceptWithEvalError Scope
-loadLibraryIntoScope scope = fmap snd $ except (tokenize stdlibContent) >>= evaluateWithScope scope
+loadLibraryIntoScope :: String -> Scope -> ExceptWithEvalError Scope
+loadLibraryIntoScope stdlibStr scope = snd <$> (except (tokenize stdlibStr) >>= evaluateWithScope scope)
 
 evaluateWithStdlib :: Scope -> [Expression] -> EvalResult
 evaluateWithStdlib parentScope exprs = do
-  scope <- loadLibraryIntoScope parentScope
+  scope <- loadLibraryIntoScope stdlibContent parentScope
   evaluateWithScope scope exprs
 
 evaluate :: [Expression] -> EvalResultPure
