@@ -15,6 +15,9 @@ evalExpressionTests = do
   let -- eval :: (CIO.ConsoleIO io) => String -> io (Either Error Atom)
       eval = runExceptT . (evaluate <=< (except . tokenize))
    in describe "evalExpression" $ do
+        describe "number ops" $ do
+          fit "should evaluate positive and negative numbers" $ do
+            eval "(+ (- 5) 2)" `shouldReturn` Right (AtomInt (-3))
         describe "bool operations" $ do
           it "should compare numbers correctly" $ do
             eval "(lt? 5 1)" `shouldReturn` Right (AtomBool False)

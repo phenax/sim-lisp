@@ -13,6 +13,7 @@ import qualified Data.ByteString.Char8 as BChar8
 import Data.FileEmbed
 import Data.List
 import qualified Data.Map as Map
+import Debug.Trace
 import qualified Effects.ConsoleIO as ConsoleIO
 import Errors
 import LParser
@@ -39,10 +40,10 @@ stdlibContent =
 
 builtins :: [(String, Evaluator)]
 builtins =
-  [ ("add", intBinaryOpt (+)),
-    ("mul", intBinaryOpt (*)),
-    ("sub", intBinaryOpt (-)),
-    ("div", intBinaryOpt div),
+  [ ("add", intBinaryOpt (+) id),
+    ("mul", intBinaryOpt (*) id),
+    ("sub", intBinaryOpt (-) (* (-1))),
+    ("div", intBinaryOpt div id),
     ("eq?", compare2E [EQ]),
     ("lt?", compare2E [LT]),
     ("lte?", compare2E [LT, EQ]),
@@ -103,12 +104,13 @@ isNumberE = typeCheck $ \case
 evalConcat :: Scope -> [Expression] -> ExceptWithEvalError [(Atom, Scope)]
 evalConcat scope = rmergeM . map (evalExpression scope)
 
-intBinaryOpt :: (Integer -> Integer -> Integer) -> Evaluator
-intBinaryOpt fn scope expr = evalConcat scope expr >>= runOp . map fst
+intBinaryOpt :: (Integer -> Integer -> Integer) -> (Integer -> Integer) -> Evaluator
+intBinaryOpt binaryOp unaryOp scope expr = evalConcat scope expr >>= runOp . map fst
   where
     runOp :: [Atom] -> ExceptWithEvalError (Atom, Scope)
     runOp = \case
-      [AtomInt a, AtomInt b] -> pure (AtomInt $ fn b a, scope)
+      [AtomInt a, AtomInt b] -> pure (AtomInt $ binaryOp b a, scope)
+      [AtomInt a] -> pure (AtomInt $ unaryOp a, scope)
       _ -> withErr $ EvalError "Invalid set of params"
 
 lambdaE :: Evaluator
@@ -243,7 +245,9 @@ toLambdaScope params scope args =
     zipParams ps argValues = case ps of
       [] -> []
       [param] -> [(param, head argValues)]
-      ["...", restP] -> [(restP, AtomSymbol . SymbolExpression . map Atom $ argValues)]
+      ["...", restP] -> [(restP, listExpr)]
+        where
+          listExpr = if null argValues then AtomNil else AtomSymbol . SymbolExpression . map Atom $ argValues
       (param : rest) -> (param, head argValues) : zipParams rest (tail argValues)
 
 applyLambda :: [String] -> Expression -> Evaluator

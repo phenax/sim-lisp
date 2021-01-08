@@ -1,10 +1,15 @@
 (declare stdlib-loaded? T)
 
 (def id (x) x)
+(def const (x) (lambda () x))
 
 (def + (... rest) (foldl (lambda (a b) (add a b)) 0 rest))
 (def * (... rest) (foldl (lambda (a b) (mul a b)) 1 rest))
-(def - (a b) (sub a b))
+(def - (first ... rest)
+  (if (null? rest)
+    (- 0 first)
+    (foldl (lambda (a b) (sub a b)) first rest)
+  ))
 (def / (a b) (div a b))
 (def square (z) (* z z))
 

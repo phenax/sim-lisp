@@ -19,6 +19,7 @@ stdlibTests = do
         describe "core#math" $ do
           it "should be identity for single args" $ do
             eval "(+ 5)" `shouldReturn` Right (AtomInt 5)
+            eval "(- 5)" `shouldReturn` Right (AtomInt (-5))
             eval "(* 7)" `shouldReturn` Right (AtomInt 7)
           it "should do basic 2 value math" $ do
             eval "(+ 5 2)" `shouldReturn` Right (AtomInt 7)

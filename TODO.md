@@ -25,8 +25,7 @@
   - [X] Support for 0 params function
   - [X] Allow rest syntax for lambda
   - [X] `display`
-  - [ ] Dont evaluate function params if not being used
-  - [ ] Negative ints
+  - [X] Negative ints
   - [ ] Floats
   - [ ] `quasiquote`, `unquote`
   - [ ] Variable number of args
@@ -34,6 +33,7 @@
   - [ ] `read`
   - [ ] Meta stuff (`define-syntax`)
   - [ ] `cond`
+  - [ ] Dont evaluate function params if not being used
   - [ ] Refactor `and`, `or` to use `define-syntax`
   - [ ] simple console io
   - [ ] Ignore comments instead of making them nil
