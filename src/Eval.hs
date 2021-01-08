@@ -58,9 +58,9 @@ builtins =
     ("cdr", cdrE),
     ("if", ifE),
     ("do", doblockE),
-    ("declare", declareE),
-    ("apply", applyExpressionE),
     ("def", defineFunctionE),
+    ("declare", defineFunctionE),
+    ("apply", applyExpressionE),
     ("let", letbindingE),
     ("number?", isNumberE),
     ("boolean?", isBooleanE),
@@ -128,14 +128,10 @@ doblockE scope = foldl evaluateExpr (pure (AtomInt 0, scope))
     evaluateExpr :: EvalResult -> Expression -> EvalResult
     evaluateExpr result expr = result >>= (`evalExpression` expr) . snd
 
-declareE :: Evaluator
-declareE scope = \case
-  [Atom (AtomSymbol (Atom (AtomLabel k))), expr] ->
-    (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
-  _ -> withErr $ EvalError "Invalid `declare` expression"
-
 defineFunctionE :: Evaluator
 defineFunctionE scope = \case
+  [Atom (AtomSymbol (Atom (AtomLabel k))), expr] ->
+    (\value -> (value, Map.insert k value scope)) <$> evalExpressionPure scope expr
   [Atom (AtomSymbol (Atom (AtomLabel name))), SymbolExpression args, body] ->
     if all isSymbol args
       then fmap defineLambda . toEither . concatM . map toSymbolString $ args

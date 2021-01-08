@@ -204,7 +204,16 @@ evalExpressionTests = do
           it "should wrap the symbol" $ do
             eval [r|(quote hello)|] `shouldReturn` Right (AtomSymbol (createLabel "hello"))
           it "should wrap the expression" $ do
-            eval [r|(quote (+ 5 2))|] `shouldReturn` Right (AtomSymbol (SymbolExpression [createLabel "+", Atom (AtomInt 5), Atom (AtomInt 2)]))
+            eval [r|(quote (+ 5 2))|]
+              `shouldReturn` Right
+                ( AtomSymbol
+                    ( SymbolExpression
+                        [ createLabel "+",
+                          Atom (AtomInt 5),
+                          Atom (AtomInt 2)
+                        ]
+                    )
+                )
 
         describe "eval" $ do
           it "should evaluate a quote" $ do
@@ -231,7 +240,16 @@ evalExpressionTests = do
         describe "cdr" $ do
           it "should return rest of the list" $ do
             eval [r| (declare hello (quote (5 4 3 2 1))) (cdr hello) |]
-              `shouldReturn` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
+              `shouldReturn` Right
+                ( AtomSymbol
+                    ( SymbolExpression
+                        [ Atom (AtomInt 4),
+                          Atom (AtomInt 3),
+                          Atom (AtomInt 2),
+                          Atom (AtomInt 1)
+                        ]
+                    )
+                )
           it "should return nil for empty list" $ do
             eval [r| (declare hello (quote ())) (cdr hello) |] `shouldReturn` Right AtomNil
           it "should throw error for non-list args" $ do
@@ -243,7 +261,17 @@ evalExpressionTests = do
         describe "cons" $ do
           it "should prepend item to list" $ do
             eval [r|(cons 5 (quote (4 3 2 1))) |]
-              `shouldReturn` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5), Atom (AtomInt 4), Atom (AtomInt 3), Atom (AtomInt 2), Atom (AtomInt 1)]))
+              `shouldReturn` Right
+                ( AtomSymbol
+                    ( SymbolExpression
+                        [ Atom (AtomInt 5),
+                          Atom (AtomInt 4),
+                          Atom (AtomInt 3),
+                          Atom (AtomInt 2),
+                          Atom (AtomInt 1)
+                        ]
+                    )
+                )
           it "should return list with first item if cdr is empty" $ do
             eval [r|(cons 5 (quote ())) |] `shouldReturn` Right (AtomSymbol (SymbolExpression [Atom (AtomInt 5)]))
           it "should throw error for non-list args" $ do
@@ -264,6 +292,8 @@ evalExpressionTests = do
                (fact 5)
               )"|]
               `shouldReturn` Right (AtomInt 120)
+          it "should allow aliasing functions" $ do
+            eval "(def minus -) (minus 7 5)" `shouldReturn` Right (AtomInt 2)
 
         describe "display" $ do
           it "should return nil" $ do
