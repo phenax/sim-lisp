@@ -1,17 +1,11 @@
 cabal-version:       2.2
--- For further documentation, see http://haskell.org/cabal/users-guide/
 
 name:                simlisp
 version:             0.1.0.0
--- synopsis:
--- description:
--- bug-reports:
--- license:
+license: MIT
 license-file:        LICENSE
 author:              Akshay Nair
 maintainer:          phenax5@gmail.com
--- copyright:
--- category:
 build-type:          Simple
 
 common lib
@@ -27,22 +21,22 @@ common lib
     base >=4.14 && <4.15
   default-language:    Haskell2010
 
-Test-Suite testis-cool
+Test-Suite test
   import: lib
   type:       exitcode-stdio-1.0
   hs-source-dirs: tests
   main-is:    _main.hs
   default: false
 
-library
+library library
   import: lib
   exposed-modules:
     LParser
+    Atom
+    Errors
+    Utils
+    Eval
 
-executable cli
+executable simlisp
   import: lib
   main-is: Main.hs
-  --other-modules:
-    --LithParser
-  -- other-extensions:
-  -- hs-source-dirs:
