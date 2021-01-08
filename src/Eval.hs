@@ -82,7 +82,7 @@ syntaxDefinitionE scope = \case
 
 displayE :: Evaluator
 displayE scope exprs = do
-  result <- foldl monadConcat (pure []) . map (fmap show . evalExpressionPure scope) $ exprs
+  result <- foldl monadAppend (pure []) . map (fmap show . evalExpressionPure scope) $ exprs
   liftExceptT . ConsoleIO.putStrLn . unwords $ result
   return (AtomNil, scope)
 
@@ -103,7 +103,7 @@ isNumberE = typeCheck $ \case
   _ -> False
 
 evalConcat :: Scope -> [Expression] -> ExceptWithEvalError [(Atom, Scope)]
-evalConcat scope = rmergeM . map (evalExpression scope)
+evalConcat scope = rconcatM . map (evalExpression scope)
 
 intBinaryOpt :: (Integer -> Integer -> Integer) -> (Integer -> Integer) -> Evaluator
 intBinaryOpt binaryOp unaryOp scope expr = evalConcat scope expr >>= runOp . map fst
@@ -118,7 +118,7 @@ lambdaE :: Evaluator
 lambdaE scope = \case
   [SymbolExpression args, body] ->
     if all isSymbol args
-      then (\params -> (AtomLambda params body, scope)) <$> (toEither . mergeM . map toSymbolString) args
+      then (\params -> (AtomLambda params body, scope)) <$> (toEither . concatM . map toSymbolString) args
       else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
   _ -> withErr $ EvalError "Invalid `lambda` expression"
 
@@ -138,7 +138,7 @@ defineFunctionE :: Evaluator
 defineFunctionE scope = \case
   [Atom (AtomSymbol (Atom (AtomLabel name))), SymbolExpression args, body] ->
     if all isSymbol args
-      then fmap defineLambda . toEither . mergeM . map toSymbolString $ args
+      then fmap defineLambda . toEither . concatM . map toSymbolString $ args
       else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
     where
       defineLambda params =
@@ -240,7 +240,7 @@ consE scope = \case
 
 toLambdaScope :: [String] -> Scope -> [Expression] -> ExceptWithEvalError Scope
 toLambdaScope params scope args =
-  (`Map.union` scope) . Map.fromList . zipParams params . map fst <$> mergeM (map (evalExpression scope) args)
+  (`Map.union` scope) . Map.fromList . zipParams params . map fst <$> concatM (map (evalExpression scope) args)
   where
     zipParams :: [String] -> [Atom] -> [(String, Atom)]
     zipParams ps argValues = case ps of

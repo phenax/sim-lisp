@@ -26,15 +26,16 @@
   - [X] Allow rest syntax for lambda
   - [X] `display`
   - [X] Negative ints
-  - [ ] Floats
+  - [X] Variable number of args
   - [ ] `quasiquote`, `unquote`
-  - [ ] Variable number of args
+  - [ ] Curry/Partially apply function
+  - [ ] Curry/Partial application syntax?
+  - [ ] Floats
   - [ ] String as list of chars
   - [ ] `read`
   - [ ] Meta stuff (`define-syntax`)
   - [ ] `cond`
   - [ ] Dont evaluate function params if not being used
-  - [ ] Refactor `and`, `or` to use `define-syntax`
   - [ ] simple console io
   - [ ] Ignore comments instead of making them nil
   - [ ] More error test cases

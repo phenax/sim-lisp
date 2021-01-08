@@ -10,33 +10,29 @@ mapFst fn (a, b) = (fn a, b)
 
 mapSnd fn (a, b) = (a, fn b)
 
-reverseMonadConcat :: Monad m => m [a] -> m a -> m [a]
-reverseMonadConcat list item = do
-  ls <- list
-  x <- item
-  return $ x : ls
-
-monadConcat :: Monad m => m [a] -> m a -> m [a]
-monadConcat m1 m2 = do
+mMerge2 :: (Monad m) => (a -> b -> m c) -> m a -> m b -> m c
+mMerge2 fn m1 m2 = do
   a <- m1
   b <- m2
-  return $ a ++ [b]
+  fn a b
 
--- TODO: Refactor both to use an innerConcatBy
-innerConcatPair :: Monad m => m [(a, b)] -> (a, m b) -> m [(a, b)]
-innerConcatPair list item = do
-  ls <- list
-  x <- snd item
-  return $ (fst item, x) : ls
+monadPrepend :: Monad m => m [a] -> m a -> m [a]
+monadPrepend = mMerge2 (\ls -> return . (: ls))
 
-rmergeM :: Monad f => [f a] -> f [a]
-rmergeM = foldl reverseMonadConcat (pure [])
+monadAppend :: Monad m => m [a] -> m a -> m [a]
+monadAppend = mMerge2 (\ls x -> return $ ls ++ [x])
 
-mergeM :: Monad f => [f a] -> f [a]
-mergeM = foldl monadConcat (pure [])
+innerPrependPair :: Monad m => m [(a, b)] -> (a, m b) -> m [(a, b)]
+innerPrependPair list item = mMerge2 (\ls x -> return $ (fst item, x) : ls) list $ snd item
+
+rconcatM :: Monad f => [f a] -> f [a]
+rconcatM = foldl monadPrepend (pure [])
+
+concatM :: Monad f => [f a] -> f [a]
+concatM = foldl monadAppend (pure [])
 
 flattenPairBySnd :: [(k, ExceptWithEvalError a)] -> ExceptWithEvalError [(k, a)]
-flattenPairBySnd = foldl innerConcatPair (pure [])
+flattenPairBySnd = foldl innerPrependPair (pure [])
 
 toEither :: Maybe a -> ExceptWithEvalError a
 toEither = \case
