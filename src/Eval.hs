@@ -44,6 +44,7 @@ builtins =
     ("mul", intBinaryOpt (*) id),
     ("sub", intBinaryOpt (-) (* (-1))),
     ("div", intBinaryOpt div id),
+    ("mod", intBinaryOpt mod id),
     ("eq?", compare2E [EQ]),
     ("lt?", compare2E [LT]),
     ("lte?", compare2E [LT, EQ]),

@@ -11,6 +11,7 @@
     (foldl (lambda (a b) (sub a b)) first rest)
   ))
 (def / (a b) (div a b))
+(def % (a b) (mod a b))
 (def square (z) (* z z))
 
 ; TODO: Allow n-args

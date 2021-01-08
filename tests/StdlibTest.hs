@@ -27,6 +27,10 @@ stdlibTests = do
             eval "(- 120 5)" `shouldReturn` Right (AtomInt 115)
             eval "(* 26 2)" `shouldReturn` Right (AtomInt 52)
             eval "(/ 26 2)" `shouldReturn` Right (AtomInt 13)
+            eval "(% 10 2)" `shouldReturn` Right (AtomInt 0)
+            eval "(% 10 3)" `shouldReturn` Right (AtomInt 1)
+            eval "(% 13 5)" `shouldReturn` Right (AtomInt 3)
+            eval "(% 3 3)" `shouldReturn` Right (AtomInt 0)
           it "should do nested computations" $ do
             eval "(* 5 (+ 2) (- 11 2) (/ 10 5))" `shouldReturn` Right (AtomInt 180)
           it "should do basic math for n-args" $ do

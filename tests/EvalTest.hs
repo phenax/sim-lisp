@@ -16,8 +16,12 @@ evalExpressionTests = do
       eval = runExceptT . (evaluate <=< (except . tokenize))
    in describe "evalExpression" $ do
         describe "number ops" $ do
-          fit "should evaluate positive and negative numbers" $ do
+          it "should evaluate positive and negative numbers" $ do
             eval "(+ (- 5) 2)" `shouldReturn` Right (AtomInt (-3))
+            eval "(mod 10 2)" `shouldReturn` Right (AtomInt 0)
+            eval "(mod 10 3)" `shouldReturn` Right (AtomInt 1)
+            eval "(mod 13 5)" `shouldReturn` Right (AtomInt 3)
+            eval "(mod 3 3)" `shouldReturn` Right (AtomInt 0)
         describe "bool operations" $ do
           it "should compare numbers correctly" $ do
             eval "(lt? 5 1)" `shouldReturn` Right (AtomBool False)
