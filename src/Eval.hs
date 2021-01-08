@@ -181,7 +181,7 @@ evalE callstack = \case
     expr <- evalExpressionPure callstack expr
     case expr of
       AtomSymbol expr -> evalExpression callstack expr
-      _ -> withErr $ EvalError "Invalid argument passed to `eval`"
+      atom -> pure (atom, callstack)
   _ -> withErr $ EvalError "Invalid number of arguments to `eval`"
 
 carE :: Evaluator

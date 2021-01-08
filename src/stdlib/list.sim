@@ -11,10 +11,10 @@
 
 (def append (ls val) (concat ls (list val)))
 
-(def foldl (fn init ls)
+(def foldl (fn acc ls)
   (if (null? ls)
-    init
-    (fn (foldl fn init (cdr ls)) (car ls))))
+    acc
+    (foldl fn (fn acc (car ls)) (cdr ls))))
 
 (def foldr (fn last ls)
   (if (null? ls)

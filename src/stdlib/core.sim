@@ -14,8 +14,19 @@
 (def % (a b) (mod a b))
 (def square (z) (* z z))
 
-; TODO: Allow n-args
-(def = (a b) (eq? a b))
+(def cond (case ... rest)
+  (if (car case)
+    (do
+      (display "values" (cdr case))
+      (foldl (lambda (_ x) (do (display "item" x) x) ) Nil (cdr case)))
+    (apply cond rest)))
+(def else T)
+
+(def = (a ... rest)
+  (if (null? rest)
+    T
+    (if (eq? a (car rest)) (apply = rest) F)))
+
 (def > (a b) (gt? a b))
 (def >= (a b) (gte? a b))
 (def < (a b) (lt? a b))
@@ -26,9 +37,9 @@
 (def and (a b) (if a b F))
 (def or (a b) (if a T b))
 
-(def bigger (a b) (if (> a b) a b))
-(def smaller (a b) (if (< a b) a b))
+(def max.bigger (a b) (if (> a b) a b))
+(def max (first ... ls) (foldl max.bigger first ls))
 
-(def max (first ... ls) (foldl bigger first ls))
-(def min (first ... ls) (foldl smaller first ls))
+(def min.smaller (a b) (if (< a b) a b))
+(def min (first ... ls) (foldl min.smaller first ls))
 

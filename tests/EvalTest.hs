@@ -210,7 +210,7 @@ evalExpressionTests = do
           it "should evaluate a quote" $ do
             eval [r| (declare fir (quote (+ 20 5))) (eval (if T fir 5)) |] `shouldReturn` Right (AtomInt 25)
           it "should return error if not a quote" $ do
-            eval [r| (eval 100) |] `shouldReturn` Left (EvalError "Invalid argument passed to `eval`")
+            eval [r| (eval 100) |] `shouldReturn` Right (AtomInt 100)
           it "should return error if no args or extra args" $ do
             eval [r| (eval) |] `shouldReturn` Left (EvalError "Invalid number of arguments to `eval`")
             eval [r| (eval 10 20 30) |] `shouldReturn` Left (EvalError "Invalid number of arguments to `eval`")

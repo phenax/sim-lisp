@@ -44,9 +44,12 @@ stdlibTests = do
             eval "(+ 10 (+ 12 \"1\"))" `shouldReturn` Left (EvalError "Invalid set of params")
           it "should allow overriding default operators" $ do
             eval "(def + (a b) (* a b)) (+ 5 3)" `shouldReturn` Right (AtomInt 15)
-          xit "should compare ints" $ do
+          it "should compare ints" $ do
             eval "(= 5 5)" `shouldReturn` Right (AtomBool True)
             eval "(= 5 2)" `shouldReturn` Right (AtomBool False)
+            eval "(= 6 6 6 6 6)" `shouldReturn` Right (AtomBool True)
+            eval "(= 6 6 5 6 6)" `shouldReturn` Right (AtomBool False)
+            eval "(= 6 6 5 6 Nil)" `shouldReturn` Right (AtomBool False)
             eval "(< 5 1)" `shouldReturn` Right (AtomBool False)
             eval "(< 1 5)" `shouldReturn` Right (AtomBool True)
             eval "(> 5 1)" `shouldReturn` Right (AtomBool True)
@@ -56,6 +59,23 @@ stdlibTests = do
             eval "(< 5 5)" `shouldReturn` Right (AtomBool False)
             eval "(<= 5 5)" `shouldReturn` Right (AtomBool True)
             eval "(<= 2 5)" `shouldReturn` Right (AtomBool True)
+
+        let fnDef =
+              [r|
+            (def getval (value) (cond
+              '((= 4 value)  "four")
+              '((= 5 value)  1 2 "five")
+              '((= 2 value)  1 "two")
+              '(else         "default")
+            ))
+          |]
+         in describe "core#cond" $ do
+              it "should return the value for condition" $ do
+                eval (fnDef ++ " (getval 4)") `shouldReturn` Right (AtomString "four")
+              it "should return else value if no condition matches" $ do
+                eval (fnDef ++ " (getval 99)") `shouldReturn` Right (AtomString "default")
+              it "should return the last value for matching case" $ do
+                eval (fnDef ++ " (getval 5)") `shouldReturn` Right (AtomString "five")
 
         describe "core#and" $ do
           it "should and values" $ do

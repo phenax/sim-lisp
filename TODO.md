@@ -27,6 +27,8 @@
   - [X] `display`
   - [X] Negative ints
   - [X] Variable number of args
+  - [X] Refactor to have scope stack instead of a flat scope
+  - [ ] Allow builtins to be first-class atoms
   - [ ] `quasiquote`, `unquote`
   - [ ] Improve repl
   - [ ] Curry/Partially apply function
