@@ -16,9 +16,7 @@
 
 (def cond (case ... rest)
   (if (car case)
-    (do
-      (display "values" (cdr case))
-      (foldl (lambda (_ x) (do (display "item" x) x) ) Nil (cdr case)))
+    (foldl (lambda (_ x) x) Nil (cdr case))
     (apply cond rest)))
 (def else T)
 

@@ -21,3 +21,12 @@
 
 (display (concat ls '(7 8 9)))
 
+; Grading cond
+(def x 20)
+(display "Grade:" (cond
+  '((lt? x 35) (display "you are a fucking failure") "F")
+  '((lt? x 50) (display "you barely made it") "C")
+  '((lt? x 80) (display "youll survive") "B")
+  '(else       (display "fucking scholar") "A")
+))
+
