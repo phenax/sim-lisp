@@ -187,7 +187,7 @@ compare2E ordering scope = \case
     return (AtomBool (check a b), scope)
     where
       check = \a b -> compareAtom a b `elem` ordering
-  _ -> withErr $ EvalError "Invalid number of arguments"
+  _ -> withErr $ EvalError "Invalid number of arguments passed for comparison"
 
 quoteE :: Evaluator
 quoteE scope = \case
@@ -278,8 +278,12 @@ fnCallE fn scope arguments =
 
 applyExpressionE :: Evaluator
 applyExpressionE scope = \case
-  [fn, Atom (AtomSymbol (SymbolExpression args))] -> evalExpression scope $ SymbolExpression (fn : args)
-  _ -> withErr $ EvalError "Invalid syntax for apply"
+  [fn, arguments] -> do
+    argType <- evalExpressionPure scope arguments
+    case argType of
+      AtomSymbol (SymbolExpression args) -> evalExpression scope $ SymbolExpression (fn : args)
+      _ -> withErr $ EvalError "Invalid args: apply expected a list of arguments"
+  ls -> withErr $ EvalError ("Invalid number of arguments passed to apply::" ++ show ls)
 
 -- Evaluate expression without leaking scope
 evalExpressionPure :: Scope -> Expression -> EvalResultPure

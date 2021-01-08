@@ -274,5 +274,7 @@ evalExpressionTests = do
             eval "(apply + '(1 4 5 2))" `shouldReturn` Right (AtomInt 12)
           it "should check if eq" $ do
             eval "(apply eq? '(5 5))" `shouldReturn` Right (AtomBool True)
+          it "should evaluate value first" $ do
+            eval "(apply eq? (concat '(5) '(5)))" `shouldReturn` Right (AtomBool True)
 
 --
