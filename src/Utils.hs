@@ -7,10 +7,6 @@ import Control.Monad
 import Debug.Trace
 import Errors
 
-mapFst fn (a, b) = (fn a, b)
-
-mapSnd fn (a, b) = (a, fn b)
-
 liftJoin2 :: (Monad m) => (a -> b -> m c) -> m a -> m b -> m c
 liftJoin2 fn m1 m2 = m1 >>= (\a -> m2 >>= fn a)
 
@@ -32,7 +28,7 @@ concatM = foldl monadAppend (pure [])
 flattenPairBySnd :: [(k, ExceptWithEvalError a)] -> ExceptWithEvalError [(k, a)]
 flattenPairBySnd = foldl innerPrependPair (pure [])
 
-toEither :: Maybe a -> ExceptWithEvalError a
-toEither = \case
+fromMaybe :: Maybe a -> ExceptWithEvalError a
+fromMaybe = \case
   Just x -> pure x
   Nothing -> withErr $ EvalError "Invalid syntax"

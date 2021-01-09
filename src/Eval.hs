@@ -36,7 +36,8 @@ stdlibContent =
 
 builtins :: [(String, Evaluator)]
 builtins =
-  [ ("add", intBinaryOpt (+) id),
+  [ -- Primitive helpers
+    ("add", intBinaryOpt (+) id),
     ("mul", intBinaryOpt (*) id),
     ("sub", intBinaryOpt (-) (* (-1))),
     ("div", intBinaryOpt div id),
@@ -46,20 +47,25 @@ builtins =
     ("lte?", compare2E [LT, EQ]),
     ("gt?", compare2E [GT]),
     ("gte?", compare2E [GT, EQ]),
+    -- Expression manipulation
     ("quote", quoteE),
     ("eval", evalE),
-    ("lambda", lambdaE),
+    ("apply", applyExpressionE),
     ("cons", consE),
     ("car", carE),
     ("cdr", cdrE),
+    -- Definition
+    ("let", letbindingE),
+    ("lambda", lambdaE),
+    ("def", defineE),
+    ("declare", defineE),
+    -- Syntax helpers
     ("if", ifE),
     ("do", doblockE),
-    ("def", defineFunctionE),
-    ("declare", defineFunctionE),
-    ("apply", applyExpressionE),
-    ("let", letbindingE),
+    -- Check type
     ("number?", isNumberE),
     ("boolean?", isBooleanE),
+    -- i/o
     ("display", displayE),
     ("import", importE)
   ]
@@ -73,8 +79,8 @@ displayE callstack exprs = do
 typeCheck :: (Atom -> Bool) -> Evaluator
 typeCheck check callstack = \case
   (head : _) -> do
-    result <- evalExpressionPure callstack head
-    return (AtomBool (check result), callstack)
+    value <- evalExpressionPure callstack head
+    return (AtomBool (check value), callstack)
   _ -> pure (AtomBool False, callstack)
 
 isBooleanE = typeCheck $ \case
@@ -104,27 +110,30 @@ doblockE callstack = foldl evaluateExpr (pure (AtomInt 0, callstack))
     evaluateExpr :: EvalResult -> Expression -> EvalResult
     evaluateExpr result expr = result >>= (`evalExpression` expr) . snd
 
+toLambdaExpr callstack body args =
+  (\params -> (AtomLambda callstack params body, callstack)) <$> symbolsToParams args
+  where
+    symbolsToParams = fromMaybe . concatM . map toSymbolString
+
 lambdaE :: Evaluator
 lambdaE callstack = \case
   [SymbolExpression args, body] ->
     if all isSymbol args
-      then (\params -> (AtomLambda callstack params body, callstack)) <$> (toEither . concatM . map toSymbolString) args
+      then toLambdaExpr callstack body args
       else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
   _ -> withErr $ EvalError "Invalid `lambda` expression"
 
-defineFunctionE :: Evaluator
-defineFunctionE callstack = \case
+defineE :: Evaluator
+defineE callstack = \case
   [Atom (AtomSymbol (Atom (AtomLabel k))), expr] ->
-    (\value -> (value, defineInScope k value callstack)) <$> evalExpressionPure callstack expr
+    createDefinition k . (,callstack) <$> evalExpressionPure callstack expr
   [Atom (AtomSymbol (Atom (AtomLabel name))), SymbolExpression args, body] ->
     if all isSymbol args
-      then fmap defineLambda . toEither . concatM . map toSymbolString $ args
-      else withErr $ EvalError "Invalid arguments passed to `lambda` expression"
-    where
-      defineLambda params =
-        let lambda = AtomLambda callstack params body
-         in (lambda, defineInScope name lambda callstack)
+      then createDefinition name <$> toLambdaExpr callstack body args
+      else withErr $ EvalError "Invalid `lambda` expression"
   _ -> withErr $ EvalError "Invalid `def` expression"
+  where
+    createDefinition name (lambda, callstack) = (lambda, defineInScope name lambda callstack)
 
 resolveScope :: ExceptWithEvalError CallStack -> ExceptWithEvalError (String, Expression) -> ExceptWithEvalError CallStack
 resolveScope sc binding = do
@@ -149,23 +158,23 @@ importE callstack = \case
 ifE :: Evaluator
 ifE callstack = \case
   [exp1, thenBody, elseBody] ->
-    let isTruthy = \case
-          AtomBool x -> x
-          AtomNil -> False
-          _ -> True
-     in do
-          condAtom <- evalExpressionPure callstack exp1
-          result <- evalExpressionPure callstack (if isTruthy condAtom then thenBody else elseBody)
-          return (result, callstack)
+    do
+      condAtom <- evalExpressionPure callstack exp1
+      result <- evalExpressionPure callstack (if isTruthy condAtom then thenBody else elseBody)
+      return (result, callstack)
+    where
+      isTruthy = \case
+        AtomBool x -> x
+        AtomNil -> False
+        _ -> True
   _ -> withErr $ EvalError "Invalid number of arguments"
 
 compare2E :: [Ordering] -> Evaluator
 compare2E ordering callstack = \case
-  [exp1, exp2] -> do
-    a <- evalExpressionPure callstack exp1
-    b <- evalExpressionPure callstack exp2
-    return (AtomBool (check a b), callstack)
+  [exp1, exp2] -> liftJoin2 compareAtom (eval exp1) (eval exp2)
     where
+      eval = evalExpressionPure callstack
+      compareAtom a b = return (AtomBool (check a b), callstack)
       check = \a b -> compare a b `elem` ordering
   _ -> withErr $ EvalError "Invalid number of arguments passed for comparison"
 
@@ -177,18 +186,16 @@ quoteE callstack = \case
 
 evalE :: Evaluator
 evalE callstack = \case
-  [expr] -> do
-    expr <- evalExpressionPure callstack expr
-    case expr of
+  [expr] ->
+    evalExpressionPure callstack expr >>= \case
       AtomSymbol expr -> trace ("-------------- " ++ show expr) $ evalExpression callstack expr
       atom -> pure (atom, callstack)
   _ -> withErr $ EvalError "Invalid number of arguments to `eval`"
 
 carE :: Evaluator
 carE callstack = \case
-  [expr] -> do
-    expr <- evalExpressionPure callstack expr
-    case expr of
+  [expr] ->
+    evalExpressionPure callstack expr >>= \case
       AtomNil -> pure (AtomNil, callstack)
       AtomSymbol (SymbolExpression []) -> pure (AtomNil, callstack)
       AtomSymbol (SymbolExpression (h : _lst)) -> evalExpression callstack h
@@ -197,9 +204,8 @@ carE callstack = \case
 
 cdrE :: Evaluator
 cdrE callstack = \case
-  [expr] -> do
-    expr <- evalExpressionPure callstack expr
-    case expr of
+  [expr] ->
+    evalExpressionPure callstack expr >>= \case
       AtomNil -> pure (AtomNil, callstack)
       AtomSymbol (SymbolExpression []) -> pure (AtomNil, callstack)
       AtomSymbol (SymbolExpression [_h]) -> pure (AtomNil, callstack)
@@ -209,8 +215,9 @@ cdrE callstack = \case
 
 consE :: Evaluator
 consE callstack = \case
-  [expr1, expr2] -> liftJoin2 prependAtoms (evalExpressionPure callstack expr1) (evalExpressionPure callstack expr2)
+  [expr1, expr2] -> liftJoin2 prependAtoms (eval expr1) (eval expr2)
     where
+      eval = evalExpressionPure callstack
       prependAtoms a b = case b of
         AtomNil -> pure (AtomSymbol $ SymbolExpression [Atom a], callstack)
         AtomSymbol (SymbolExpression ls) -> pure (AtomSymbol $ SymbolExpression $ Atom a : ls, callstack)
@@ -235,8 +242,8 @@ lambdaClosure params callstack args =
 
 applyLambda :: [String] -> Expression -> Evaluator
 applyLambda params body callstack arguments = do
-  new <- lambdaClosure params callstack arguments
-  result <- evalExpressionPure new body
+  newClosure <- lambdaClosure params callstack arguments
+  result <- evalExpressionPure newClosure body
   return (result, callstack)
 
 applyAsSymbol :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalError (Atom, CallStack))
@@ -280,18 +287,19 @@ evalExpression callstack = \case
       Nothing -> withErr $ EvalError $ "Variable " ++ k ++ " not found in scope"
     a -> pure (a, callstack)
   SymbolExpression exprs ->
-    let lst = tail exprs
-        runLambda cs params body = applyLambda params body (mergeCallStack cs callstack) lst
-        symListExprE exprs =
-          evalExpressionPure callstack (SymbolExpression exprs) >>= \case
-            AtomLambda closureStack params body -> runLambda closureStack params body
-            _ -> withErr $ EvalError "Invalid syntax"
-     in case head exprs of
-          -- TODO: predefined function as symbol
-          Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> fnCallE opSymbol callstack lst
-          SymbolExpression exprs -> symListExprE exprs
-          Atom (AtomLambda closureStack params body) -> runLambda closureStack params body
-          _ -> withErr $ EvalError ("TODO: Not impl 1 -- " ++ show exprs)
+    case head exprs of
+      -- TODO: builtin as symbol
+      Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> fnCallE opSymbol callstack lst
+      SymbolExpression exprs -> symListExprE exprs
+      Atom (AtomLambda closureStack params body) -> runLambda closureStack params body
+      _ -> withErr $ EvalError ("TODO: Not impl 1 -- " ++ show exprs)
+    where
+      lst = tail exprs
+      runLambda cs params body = applyLambda params body (mergeCallStack cs callstack) lst
+      symListExprE exprs =
+        evalExpressionPure callstack (SymbolExpression exprs) >>= \case
+          AtomLambda closureStack params body -> runLambda closureStack params body
+          _ -> withErr $ EvalError "Invalid syntax"
 
 evaluateWithScope :: CallStack -> [Expression] -> EvalResult
 evaluateWithScope callstack = evalExpression callstack . SymbolExpression . (createLabel "do" :)

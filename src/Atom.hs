@@ -98,21 +98,6 @@ toSymbolString = \case
   Atom (AtomSymbol (Atom (AtomLabel s))) -> Just s
   _ -> Nothing
 
-mapInt :: (Integer -> Integer) -> Atom -> Atom
-mapInt fn = \case
-  AtomInt x -> AtomInt $ fn x
-  x -> x
-
-mapBool :: (Bool -> Bool) -> Atom -> Atom
-mapBool fn = \case
-  AtomBool x -> AtomBool $ fn x
-  x -> x
-
-onlyBool :: Atom -> ExceptWithEvalError Atom
-onlyBool = \case
-  AtomBool b -> pure $ AtomBool b
-  _ -> withErr $ EvalError "Invalid data type. Expected boolean"
-
 createLabel = Atom . AtomSymbol . Atom . AtomLabel
 
 --
