@@ -66,8 +66,8 @@ builtins =
 
 displayE :: Evaluator
 displayE callstack exprs = do
-  result <- foldl monadAppend (pure []) . map (fmap show . evalExpressionPure callstack) $ exprs
-  liftExceptT . ConsoleIO.putStrLn . unwords $ result
+  result <- concatM . map (fmap show . evalExpressionPure callstack) $ exprs
+  liftExceptT . ConsoleIO.putStrLn . intercalate "" $ result
   return (AtomNil, callstack)
 
 typeCheck :: (Atom -> Bool) -> Evaluator
