@@ -80,17 +80,26 @@ stdlibTests = do
 
         describe "core#and" $ do
           it "should and values" $ do
-            pending
             eval "(and T T)" `shouldReturn` Right (AtomBool True)
             eval "(and T F)" `shouldReturn` Right (AtomBool False)
             eval "(and F T)" `shouldReturn` Right (AtomBool False)
             eval "(and F F)" `shouldReturn` Right (AtomBool False)
+            eval "(and T)" `shouldReturn` Right (AtomBool True)
+            eval "(and F)" `shouldReturn` Right (AtomBool False)
+            eval "(and T T T T T)" `shouldReturn` Right (AtomBool True)
+            eval "(and T F T T T)" `shouldReturn` Right (AtomBool False)
+            eval "(and T T T F T)" `shouldReturn` Right (AtomBool False)
         describe "core#or" $ do
           it "should and values" $ do
             eval "(or T T)" `shouldReturn` Right (AtomBool True)
             eval "(or T F)" `shouldReturn` Right (AtomBool True)
             eval "(or F T)" `shouldReturn` Right (AtomBool True)
             eval "(or F F)" `shouldReturn` Right (AtomBool False)
+            eval "(or T)" `shouldReturn` Right (AtomBool True)
+            eval "(or F)" `shouldReturn` Right (AtomBool False)
+            eval "(or F F F F F)" `shouldReturn` Right (AtomBool False)
+            eval "(or F T F F F)" `shouldReturn` Right (AtomBool True)
+            eval "(or F F F T F)" `shouldReturn` Right (AtomBool True)
         describe "core#not" $ do
           it "should return F for T and T for F and T for Nil" $ do
             eval "(not F)" `shouldReturn` Right (AtomBool True)

@@ -35,8 +35,10 @@
 
 (def not (a) (if a F T))
 
-(def and (a b) (if a b F))
-(def or (a b) (if a T b))
+(def and (first ... rest)
+  (foldl (lambda (a b) (if a b F)) first rest))
+(def or (first ... rest)
+  (foldl (lambda (a b) (if a T b)) first rest))
 
 (def max.bigger (a b) (if (> a b) a b))
 (def max (first ... ls) (foldl max.bigger first ls))

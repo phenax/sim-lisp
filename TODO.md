@@ -28,26 +28,25 @@
   - [X] Negative ints
   - [X] Variable number of args
   - [X] Refactor to have scope stack instead of a flat scope
+  - [X] `cond`
+  - [X] Make `=` work with any number of args
+  - [X] Make `and`, `or` work with any number of args
   - [ ] `quasiquote`, `unquote`
   - [ ] Allow builtins to be first-class atoms
   - [ ] Fix leaking scope issue for (function params conflict with scope variables)
   - [ ] Improve repl
   - [ ] Curry/Partially apply function
   - [ ] Curry/Partial application syntax?
-  - [ ] Floats
+  - [ ] Float
   - [ ] String as list of chars
   - [ ] `read`
-  - [ ] Meta stuff (`define-syntax`)
-  - [ ] `cond`
-  - [ ] Dont evaluate function params if not being used
-  - [ ] simple console io
+  - [ ] File io
+  - [ ] `def-syntax` ?
   - [ ] Ignore comments instead of making them nil
   - [ ] More error test cases
   - [ ] Generalize errors
   - [ ] Error line numbers
-  - [ ] Make `=` work with any number of args
   - [ ] `import` - Import module
-  - [ ] Allow negative and floats numbers
   - [ ] core stdlib
   - [ ] list stdlib
   - [ ] string stdlib
