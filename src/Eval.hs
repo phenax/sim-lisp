@@ -209,7 +209,7 @@ cdrE callstack = \case
 
 consE :: Evaluator
 consE callstack = \case
-  [expr1, expr2] -> mMerge2 prependAtoms (evalExpressionPure callstack expr1) (evalExpressionPure callstack expr2)
+  [expr1, expr2] -> liftJoin2 prependAtoms (evalExpressionPure callstack expr1) (evalExpressionPure callstack expr2)
     where
       prependAtoms a b = case b of
         AtomNil -> pure (AtomSymbol $ SymbolExpression [Atom a], callstack)
@@ -281,15 +281,16 @@ evalExpression callstack = \case
     a -> pure (a, callstack)
   SymbolExpression exprs ->
     let lst = tail exprs
+        runLambda cs params body = applyLambda params body (mergeCallStack cs callstack) lst
         symListExprE exprs =
           evalExpressionPure callstack (SymbolExpression exprs) >>= \case
-            AtomLambda closureStack params body -> applyLambda params body (mergeCallStack closureStack callstack) lst
+            AtomLambda closureStack params body -> runLambda closureStack params body
             _ -> withErr $ EvalError "Invalid syntax"
      in case head exprs of
           -- TODO: predefined function as symbol
           Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> fnCallE opSymbol callstack lst
           SymbolExpression exprs -> symListExprE exprs
-          Atom (AtomLambda closureStack params body) -> applyLambda params body (mergeCallStack closureStack callstack) lst
+          Atom (AtomLambda closureStack params body) -> runLambda closureStack params body
           _ -> withErr $ EvalError ("TODO: Not impl 1 -- " ++ show exprs)
 
 evaluateWithScope :: CallStack -> [Expression] -> EvalResult

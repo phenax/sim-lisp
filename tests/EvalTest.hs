@@ -328,7 +328,7 @@ evalExpressionTests = do
               [r|
                 (def fn (b a) (eval b))
                 (def a 6)
-                (fn (- a 2) 200)
+                (fn '(- a 2) 200)
               |]
               `shouldReturn` Right (AtomInt 4)
           it "should allow using list as unquoted expression" $ do
