@@ -180,7 +180,7 @@ evalE callstack = \case
   [expr] -> do
     expr <- evalExpressionPure callstack expr
     case expr of
-      AtomSymbol expr -> evalExpression callstack expr
+      AtomSymbol expr -> trace ("-------------- " ++ show expr) $ evalExpression callstack expr
       atom -> pure (atom, callstack)
   _ -> withErr $ EvalError "Invalid number of arguments to `eval`"
 
@@ -281,14 +281,16 @@ evalExpression callstack = \case
     a -> pure (a, callstack)
   SymbolExpression exprs ->
     let lst = tail exprs
+        symListExprE exprs =
+          evalExpressionPure callstack (SymbolExpression exprs) >>= \case
+            AtomLambda closureStack params body -> applyLambda params body (mergeCallStack closureStack callstack) lst
+            _ -> withErr $ EvalError "Invalid syntax"
      in case head exprs of
           -- TODO: predefined function as symbol
           Atom (AtomSymbol (Atom (AtomLabel opSymbol))) -> fnCallE opSymbol callstack lst
-          SymbolExpression exprs ->
-            evalExpressionPure callstack (SymbolExpression exprs) >>= \case
-              AtomLambda closureStack params body -> applyLambda params body (mergeCallStack closureStack callstack) lst
-              _ -> withErr $ EvalError "Invalid syntax"
-          _ -> withErr $ EvalError "TODO: Not impl 1"
+          SymbolExpression exprs -> symListExprE exprs
+          Atom (AtomLambda closureStack params body) -> applyLambda params body (mergeCallStack closureStack callstack) lst
+          _ -> withErr $ EvalError ("TODO: Not impl 1 -- " ++ show exprs)
 
 evaluateWithScope :: CallStack -> [Expression] -> EvalResult
 evaluateWithScope callstack = evalExpression callstack . SymbolExpression . (createLabel "do" :)

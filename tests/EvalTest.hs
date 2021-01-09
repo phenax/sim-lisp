@@ -323,5 +323,21 @@ evalExpressionTests = do
                 (((fn 1 2) 3 4) 5 6)
               |]
               `shouldReturn` Right (listExpr $ map (Atom . AtomInt) [1, 3, 5, 6, 20])
+          xit "should prevent leaking variables while evaluating expressions" $ do
+            eval
+              [r|
+                (def fn (b a) (eval b))
+                (def a 6)
+                (fn (- a 2) 200)
+              |]
+              `shouldReturn` Right (AtomInt 4)
+          it "should allow using list as unquoted expression" $ do
+            eval
+              [r|
+                (def fn (b a) (eval b))
+                (def a 6)
+                (fn (list - a 2) 200)
+              |]
+              `shouldReturn` Right (AtomInt 4)
 
 --
