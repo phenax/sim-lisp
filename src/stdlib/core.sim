@@ -10,9 +10,11 @@
 (def - (first ... rest)
   (if (null? rest)
     (- 0 first)
-    (foldl (lambda (a b) (sub a b)) first rest)
-  ))
-(def / (a b) (div a b))
+    (foldl (lambda (a b) (sub a b)) first rest)))
+(def / (first ... rest)
+  (if (null? rest)
+    first
+    (foldl (lambda (a b) (div a b)) first rest)))
 (def % (a b) (mod a b))
 (def square (z) (* z z))
 
@@ -40,9 +42,9 @@
 (def or (first ... rest)
   (foldl (lambda (a b) (if a T b)) first rest))
 
-(def max.bigger (a b) (if (> a b) a b))
-(def max (first ... ls) (foldl max.bigger first ls))
+(def number.bigger (a b) (if (> a b) a b))
+(def max (first ... ls) (foldl number.bigger first ls))
 
-(def min.smaller (a b) (if (< a b) a b))
-(def min (first ... ls) (foldl min.smaller first ls))
+(def number.smaller (a b) (if (< a b) a b))
+(def min (first ... ls) (foldl number.smaller first ls))
 

@@ -21,6 +21,7 @@ stdlibTests = do
             eval "(+ 5)" `shouldReturn` Right (AtomInt 5)
             eval "(- 5)" `shouldReturn` Right (AtomInt (-5))
             eval "(* 7)" `shouldReturn` Right (AtomInt 7)
+            eval "(/ 12)" `shouldReturn` Right (AtomInt 12)
           it "should do basic 2 value math" $ do
             eval "(+ 5 2)" `shouldReturn` Right (AtomInt 7)
             eval "(+ 120 5)" `shouldReturn` Right (AtomInt 125)
@@ -37,8 +38,11 @@ stdlibTests = do
             eval "(+ 10 2 3 6)" `shouldReturn` Right (AtomInt 21)
             eval "(+ 120 5 21 1 1 6)" `shouldReturn` Right (AtomInt 154)
             eval "(- 120 5)" `shouldReturn` Right (AtomInt 115)
+            eval "(- 120 5 12 4 1 0 0 9)" `shouldReturn` Right (AtomInt 89)
+            eval "(/ 500 5 2 1 1 5)" `shouldReturn` Right (AtomInt 10)
             eval "(* 26 2 10)" `shouldReturn` Right (AtomInt 520)
             eval "(/ 26 2)" `shouldReturn` Right (AtomInt 13)
+            eval "(/ 500 5 2 1 1 5)" `shouldReturn` Right (AtomInt 10)
           it "should emit eval error for invalid types" $ do
             eval "(+ 10 \"fucking hell\" 5)" `shouldReturn` Left (EvalError "Invalid set of params")
             eval "(+ 10 (+ 12 \"1\"))" `shouldReturn` Left (EvalError "Invalid set of params")
@@ -111,6 +115,28 @@ stdlibTests = do
             eval "(not 50)" `shouldReturn` Right (AtomBool False)
             eval "(not 0)" `shouldReturn` Right (AtomBool False)
             eval "(not \"hellow\")" `shouldReturn` Right (AtomBool False)
+        describe "core#max, core#min" $ do
+          it "should return max value" $ do
+            eval "(max 1 2 3 4 5)" `shouldReturn` Right (AtomInt 5)
+            eval "(max 5 4 3 2 1)" `shouldReturn` Right (AtomInt 5)
+            eval "(max 3 9 1)" `shouldReturn` Right (AtomInt 9)
+            eval "(max (- 3) (- 2) (- 9) (- 1))" `shouldReturn` Right (AtomInt (-1))
+            eval "(max 10)" `shouldReturn` Right (AtomInt 10)
+            eval "(max 6 6 6)" `shouldReturn` Right (AtomInt 6)
+          it "should apply max to list of values" $ do
+            eval "(apply max '(3 2 9 1))" `shouldReturn` Right (AtomInt 9)
+            eval "(apply max '(10))" `shouldReturn` Right (AtomInt 10)
+            eval "(apply max '(6 6 6))" `shouldReturn` Right (AtomInt 6)
+          it "should return min value" $ do
+            eval "(min 1 2 3 4 5)" `shouldReturn` Right (AtomInt 1)
+            eval "(min 5 4 3 2 1)" `shouldReturn` Right (AtomInt 1)
+            eval "(min 3 9 (- 10))" `shouldReturn` Right (AtomInt (-10))
+            eval "(min 10)" `shouldReturn` Right (AtomInt 10)
+            eval "(min 6 6 6)" `shouldReturn` Right (AtomInt 6)
+          it "should apply min to list of values" $ do
+            eval "(apply min '(3 2 9 1))" `shouldReturn` Right (AtomInt 1)
+            eval "(apply min '(10))" `shouldReturn` Right (AtomInt 10)
+            eval "(apply min '(6 6 6))" `shouldReturn` Right (AtomInt 6)
 
         describe "list#foldl" $ do
           it "should fold all items in list" $ do

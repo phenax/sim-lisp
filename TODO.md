@@ -31,6 +31,7 @@
   - [X] `cond`
   - [X] Make `=` work with any number of args
   - [X] Make `and`, `or` work with any number of args
+  - [ ] Better errors for argument length mismatch
   - [ ] `quasiquote`, `unquote`
   - [ ] Allow builtins to be first-class atoms
   - [ ] Fix leaking scope issue for (function params conflict with scope variables)
