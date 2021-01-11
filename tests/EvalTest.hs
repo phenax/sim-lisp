@@ -14,7 +14,7 @@ import Text.RawString.QQ
 
 listExpr = AtomSymbol . SymbolExpression
 
-evalExpressionTests = do
+tests = do
   let -- eval :: (CIO.ConsoleIO io) => String -> io (Either Error Atom)
       eval = runExceptT . (evaluate <=< (except . tokenize))
    in describe "evalExpression" $ do
@@ -174,7 +174,13 @@ evalExpressionTests = do
             eval "(def fn () (* 2 5)) (fn)" `shouldReturn` Right (AtomInt 10)
           it "should allow accessing the rest of the params with ... symbol syntax" $ do
             eval "((lambda (... rest) rest) 1 2 3)"
-              `shouldReturn` Right (AtomSymbol . SymbolExpression $ [Atom . AtomInt $ 1, Atom . AtomInt $ 2, Atom . AtomInt $ 3])
+              `shouldReturn` Right
+                ( AtomSymbol . SymbolExpression $
+                    [ Atom . AtomInt $ 1,
+                      Atom . AtomInt $ 2,
+                      Atom . AtomInt $ 3
+                    ]
+                )
             eval "((lambda (a b ... rest) rest) 1 2 3)"
               `shouldReturn` Right (AtomSymbol . SymbolExpression $ [Atom . AtomInt $ 3])
             eval "(def tail (a ... rest) rest) (tail 1 2 3)"
@@ -187,7 +193,13 @@ evalExpressionTests = do
             eval "(def tail (a b ... rest) rest) (tail 1 2 3)"
               `shouldReturn` Right (AtomSymbol . SymbolExpression $ [Atom . AtomInt $ 3])
             eval "(def tail (... rest) rest) (tail 1 2 3)"
-              `shouldReturn` Right (AtomSymbol . SymbolExpression $ [Atom . AtomInt $ 1, Atom . AtomInt $ 2, Atom . AtomInt $ 3])
+              `shouldReturn` Right
+                ( AtomSymbol . SymbolExpression $
+                    [ Atom . AtomInt $ 1,
+                      Atom . AtomInt $ 2,
+                      Atom . AtomInt $ 3
+                    ]
+                )
 
         describe "quote" $ do
           it "should wrap the symbol" $ do
@@ -323,6 +335,7 @@ evalExpressionTests = do
                 (((fn 1 2) 3 4) 5 6)
               |]
               `shouldReturn` Right (listExpr $ map (Atom . AtomInt) [1, 3, 5, 6, 20])
+          -- TODO: Fix issue
           xit "should prevent leaking variables while evaluating expressions" $ do
             eval
               [r|
@@ -339,5 +352,21 @@ evalExpressionTests = do
                 (fn (list - a 2) 200)
               |]
               `shouldReturn` Right (AtomInt 4)
+          it "should allow closure scope to be deeper than caller scope" $ do
+            eval
+              [r|
+                (def foobar (f x) (lambda (x) (f x 2)))
+                ((foobar + 5) 20)
+              |]
+              `shouldReturn` Right (AtomInt 22)
+          xit "should allow caller scope to be deeper than closure scope" $ do
+            eval
+              [r|
+                (def comp (f1 f2) (lambda (x) (f1 (f2 x))))
+                (def add10 (x) (+ x 10))
+                (def getresult (comp add10 add10))
+                (getresult 5)
+              |]
+              `shouldReturn` Right (AtomInt 22)
 
 --

@@ -3,6 +3,9 @@
 (def id (x) x)
 (def const (x) (lambda () x))
 
+(def compose2 (f g) (lambda (x) (f (g x))))
+(def compose (fn ... rest) (foldl compose2 fn rest))
+
 (def log (x y) (do (display x y) y))
 
 (def + (... rest) (foldl (lambda (a b) (add a b)) 0 rest))

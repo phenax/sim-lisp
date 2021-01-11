@@ -8,7 +8,7 @@ import Test.Hspec
 import Text.Parsec
 import Text.RawString.QQ
 
-valueParsers = do
+tests = do
   let parseValue = parse stringP "Str"
    in describe "stringP" $ do
         it "should parse simple string" $ do
@@ -86,7 +86,6 @@ valueParsers = do
                       ]
               )
 
-expressionParsers = do
   let parseValue = parse expressionP "Expr"
    in describe "expressionP" $ do
         it "should parse function call with one argument" $ do

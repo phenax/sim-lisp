@@ -188,7 +188,7 @@ evalE :: Evaluator
 evalE callstack = \case
   [expr] ->
     evalExpressionPure callstack expr >>= \case
-      AtomSymbol expr -> trace ("-------------- " ++ show expr) $ evalExpression callstack expr
+      AtomSymbol expr -> evalExpression callstack expr
       atom -> pure (atom, callstack)
   _ -> withErr $ EvalError "Invalid number of arguments to `eval`"
 
@@ -226,31 +226,30 @@ consE callstack = \case
 
 lambdaClosure :: [String] -> CallStack -> [Expression] -> ExceptWithEvalError CallStack
 lambdaClosure params callstack args =
-  pushToStack callstack . Map.fromList . zipParams params . map fst <$> concatM (map (evalExpression callstack) args)
+  toClosureScope . map fst <$> concatM (map (evalExpression callstack) args)
   where
-    zipParams :: [String] -> [Atom] -> [(String, Atom)]
+    toClosureScope = pushToStack callstack . scopeFromPairs . zipParams params
     zipParams ps argValues = case ps of
       [] -> []
-      [param] -> [(param, head argValues)]
       ["...", restP] -> [(restP, listExpr)]
         where
-          listExpr =
-            if null argValues
-              then AtomNil
-              else AtomSymbol . SymbolExpression . map Atom $ argValues
+          toList = AtomSymbol . SymbolExpression . map Atom
+          listExpr = if null argValues then AtomNil else toList argValues
       (param : rest) -> (param, head argValues) : zipParams rest (tail argValues)
 
 applyLambda :: [String] -> Expression -> Evaluator
 applyLambda params body callstack arguments = do
   newClosure <- lambdaClosure params callstack arguments
   result <- evalExpressionPure newClosure body
-  return (result, callstack)
+  return $ trace ("Trace :: " ++ show params ++ " --- " ++ showCallStack (init newClosure)) (result, callstack)
 
 applyAsSymbol :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalError (Atom, CallStack))
 applyAsSymbol fn callstack arguments = evaluateValue <$> findDefinition fn callstack
   where
     evaluateValue = \case
-      AtomLambda closureStack params body -> applyLambda params body (mergeCallStack closureStack callstack) arguments
+      AtomLambda closureStack params body ->
+        trace ("Function ::::::: " ++ fn ++ " -- " ++ showCallStack (init callstack)) $
+          applyLambda params body (mergeCallStack closureStack callstack) arguments
       _ -> withErr $ EvalError ("Invalid call. `" ++ fn ++ "` is not a function")
 
 applyBuiltin :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalError (Atom, CallStack))

@@ -13,7 +13,7 @@ import Text.RawString.QQ
 
 listExpression = AtomSymbol . SymbolExpression
 
-stdlibTests = do
+tests = do
   let eval = runExceptT . (evaluate <=< (except . tokenize))
    in describe "stdlib" $ do
         describe "core#math" $ do
@@ -81,6 +81,40 @@ stdlibTests = do
                 eval (fnDef ++ " (getval 99)") `shouldReturn` Right (AtomString "default")
               it "should return the last value for matching case" $ do
                 eval (fnDef ++ " (getval 5)") `shouldReturn` Right (AtomString "five")
+
+        describe "core#compose" $ do
+          it "should compose 2 functions (compose2)" $ do
+            eval
+              [r|
+              (def normalize (x) (+ 5 x))
+              (def is-adult (x) (do (display x) (> x 18)))
+
+              (def fn (compose2 is-adult normalize))
+              (fn 15)
+            |]
+              `shouldReturn` Right (AtomBool True)
+          it "should compose 2 functions with list data type (compose2)" $ do
+            eval
+              [r|
+              (def is-adult (x) (do (display x) (> x 18)))
+              (def getage (user) (car (cdr user)))
+
+              (def is-adult (compose2 is-adult getage))
+              (is-adult '("Akshay" 20))
+            |]
+              `shouldReturn` Right (AtomBool True)
+          xit "should compose 2 functions with list data type (compose2)" $ do
+            eval
+              [r|
+              (def normalize (x) (+ 5 x))
+              (def is-adult (x) (do (display x) (> x 18)))
+              (def getage (x) (car (cdr x)))
+
+              (def fn1 (user) (compose2 normalize getage))
+              (def is-adult (compose2 (const "wow") fn1))
+              (is-adult '("Akshay" 20))
+            |]
+              `shouldReturn` Right (AtomBool True)
 
         describe "core#and" $ do
           it "should and values" $ do

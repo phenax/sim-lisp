@@ -1,11 +1,12 @@
-import EvalTest
-import LParserTest
-import StdlibTest
+import qualified CallStackTest
+import qualified EvalTest
+import qualified LParserTest
+import qualified StdlibTest
 import Test.Hspec
 
 main :: IO ()
 main = hspec $ do
-  valueParsers
-  expressionParsers
-  stdlibTests
-  evalExpressionTests
+  EvalTest.tests
+  LParserTest.tests
+  StdlibTest.tests
+  CallStackTest.tests

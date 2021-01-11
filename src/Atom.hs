@@ -3,6 +3,7 @@
 module Atom where
 
 import Control.Monad.Trans.Except
+import Data.List
 import qualified Data.Map as Map
 import Debug.Trace
 import Errors
@@ -11,8 +12,18 @@ type Scope = Map.Map String Atom
 
 type CallStack = [Scope]
 
-emptyScope = Map.empty
+scopeIdKey = "$('scopeId')"
 
+scopeFromPairs :: [(String, Atom)] -> Scope
+scopeFromPairs = Map.fromList -- . ((scopeIdKey, AtomInt 5) :)
+
+emptyScope :: Scope
+emptyScope = scopeFromPairs []
+
+mergeScope :: Scope -> Scope -> Scope
+mergeScope = Map.union
+
+emptyCallStack :: CallStack
 emptyCallStack = [emptyScope]
 
 findDefinition :: String -> CallStack -> Maybe Atom
@@ -27,15 +38,20 @@ pushToStack cs s = s : cs
 defineInScope :: String -> Atom -> CallStack -> CallStack
 defineInScope key value = \case
   [] -> [Map.insert key value emptyScope]
-  [scope] -> [Map.insert key value scope]
   (scope : stack) -> Map.insert key value scope : stack
 
+-- TODO: The name conflict problem is here somewhere
 mergeCallStack :: CallStack -> CallStack -> CallStack
 mergeCallStack [] [] = []
 mergeCallStack x [] = x
 mergeCallStack [] x = x
 mergeCallStack closure calling =
-  mergeCallStack (init closure) (init calling) ++ [Map.union (last calling) (last closure)]
+  mergeCallStack (init closure) (init calling) ++ [mergeScope (last calling) (last closure)]
+
+showCallStack :: CallStack -> String
+showCallStack = intercalate "\n" . ("STACK" :) . map printScope
+  where
+    printScope = ('\t' :) . intercalate "; " . map (\(k, v) -> "" ++ k ++ ": " ++ show v) . Map.toList
 
 data Expression
   = Atom Atom
