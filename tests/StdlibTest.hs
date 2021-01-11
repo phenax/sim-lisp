@@ -82,6 +82,22 @@ tests = do
               it "should return the last value for matching case" $ do
                 eval (fnDef ++ " (getval 5)") `shouldReturn` Right (AtomString "five")
 
+        describe "core#curry" $ do
+          it "should partially apply a function with 1 arg" $ do
+            eval "(def add10 (curry + 10)) (add10 1 3 8)" `shouldReturn` Right (AtomInt 22)
+          it "should partially apply a function with multiple args arg" $ do
+            eval "(def add15 (curry + 10 5)) (add15 1 3 8)" `shouldReturn` Right (AtomInt 27)
+          it "should allow passing multiple curry calls" $ do
+            eval "((curry + 6) ((curry * 2) 10))" `shouldReturn` Right (AtomInt 26)
+          -- TODO: Fix after closure issue fixed
+          xit "should allow passing curried functions as args for composition" $ do
+            eval
+              [r|
+              (def domath (compose2 (curry + 10) (curry * 5)))
+              (domath 4)
+            |]
+              `shouldReturn` Right (AtomInt 27)
+
         describe "core#compose" $ do
           it "should compose 2 functions (compose2)" $ do
             eval

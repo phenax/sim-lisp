@@ -1,32 +1,38 @@
 
-(declare ls '(1 2 3 4 5 6))
+(def c2 (fn) (lambda (x) (fn x)))
+(def add10 (x) (+ x 10))
+(def call (c2 (c2 add10)))
+(call 5)
 
-(def average (ls)
-  (/
-    (foldl + 0 ls)
-    (length ls)))
 
-(display
-  (let (
-    (a 20)
-    (b (+ a 10))
-    (c (* a b))
-  ) (+ a b c)))
-
-(display "Length:" (length ls))
-
-(display "Sum:" (sum ls))
-
-(display "Average:" (average ls))
-
-(display (concat ls '(7 8 9)))
-
-; Grading cond
-(def x 20)
-(display "Grade:" (cond
-  '((lt? x 35) (display "you are a fucking failure") "F")
-  '((lt? x 50) (display "you barely made it") "C")
-  '((lt? x 80) (display "youll survive") "B")
-  '(else       (display "fucking scholar") "A")
-))
+; (declare ls '(1 2 3 4 5 6))
+; 
+; (def average (ls)
+;   (/
+;     (foldl + 0 ls)
+;     (length ls)))
+; 
+; (display
+;   (let (
+;     (a 20)
+;     (b (+ a 10))
+;     (c (* a b))
+;   ) (+ a b c)))
+; 
+; (display "Length:" (length ls))
+; 
+; (display "Sum:" (sum ls))
+; 
+; (display "Average:" (average ls))
+; 
+; (display (concat ls '(7 8 9)))
+; 
+; ; Grading cond
+; (def x 20)
+; (display "Grade:" (cond
+;   '((lt? x 35) (display "you are a fucking failure") "F")
+;   '((lt? x 50) (display "you barely made it") "C")
+;   '((lt? x 80) (display "youll survive") "B")
+;   '(else       (display "fucking scholar") "A")
+; ))
 

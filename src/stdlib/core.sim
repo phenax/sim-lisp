@@ -5,6 +5,7 @@
 
 (def compose2 (f g) (lambda (x) (f (g x))))
 (def compose (fn ... rest) (foldl compose2 fn rest))
+(def curry (fn ... pargs) (lambda (... args) (apply fn (concat pargs args))))
 
 (def log (x y) (do (display x y) y))
 
@@ -45,9 +46,11 @@
 (def or (first ... rest)
   (foldl (lambda (a b) (if a T b)) first rest))
 
-(def number.bigger (a b) (if (> a b) a b))
-(def max (first ... ls) (foldl number.bigger first ls))
+(def max (first ... ls) (do
+  (def bigger (a b) (if (> a b) a b))
+  (foldl bigger first ls)))
 
-(def number.smaller (a b) (if (< a b) a b))
-(def min (first ... ls) (foldl number.smaller first ls))
+(def min (first ... ls) (do
+  (def smaller (a b) (if (< a b) a b))
+  (foldl smaller first ls)))
 
