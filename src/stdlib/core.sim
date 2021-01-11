@@ -1,14 +1,16 @@
 (declare stdlib-loaded? T)
 
+; "Functional helpers"
 (def id (x) x)
 (def const (x) (lambda () x))
-
 (def compose2 (f g) (lambda (x) (f (g x))))
 (def compose (fn ... rest) (foldl compose2 fn rest))
 (def curry (fn ... pargs) (lambda (... args) (apply fn (concat pargs args))))
 
+; "Debugging helpers"
 (def log (x y) (do (display x y) y))
 
+; "Arithmetic operators"
 (def + (... rest) (foldl (lambda (a b) (add a b)) 0 rest))
 (def * (... rest) (foldl (lambda (a b) (mul a b)) 1 rest))
 (def - (first ... rest)
@@ -22,34 +24,38 @@
 (def % (a b) (mod a b))
 (def square (z) (* z z))
 
+; "Conditional"
 (def cond (case ... cases)
   (if (car case)
     (foldl (lambda (_ x) x) Nil (cdr case))
     (apply cond cases)))
 (def else T)
 
+; "Comparison operators"
+(def > (a b) (gt? a b))
+(def >= (a b) (gte? a b))
+(def < (a b) (lt? a b))
+(def <= (a b) (lte? a b))
 (def = (a ... values) (cond
   '((null? values) T)
   '((eq? a (car values)) (apply = values))
   '(else F)
 ))
 
-(def > (a b) (gt? a b))
-(def >= (a b) (gte? a b))
-(def < (a b) (lt? a b))
-(def <= (a b) (lte? a b))
-
+; "!"
 (def not (a) (if a F T))
 
+; "and/or (All arguments will be evaluated)"
 (def and (first ... rest)
   (foldl (lambda (a b) (if a b F)) first rest))
 (def or (first ... rest)
   (foldl (lambda (a b) (if a T b)) first rest))
 
+
+; "min/max value in the given list of arguments"
 (def max (first ... ls) (do
   (def bigger (a b) (if (> a b) a b))
   (foldl bigger first ls)))
-
 (def min (first ... ls) (do
   (def smaller (a b) (if (< a b) a b))
   (foldl smaller first ls)))

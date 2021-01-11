@@ -241,11 +241,27 @@ tests = do
           it "should return Nil for empty list" $ do
             eval "(filter (lambda (x) (>= x 1)) '())" `shouldReturn` Right AtomNil
 
+        describe "list#all" $ do
+          it "should return true if condition is satisfied by all items" $ do
+            eval "(all (lambda (x) (<= x 10)) '(20 5 8 16 2))" `shouldReturn` Right (AtomBool False)
+            eval "(all (lambda (x) (<= x 10)) '(8 5 8 2 (- 100)))" `shouldReturn` Right (AtomBool True)
+          it "should return Nil for empty list" $ do
+            eval "(all (lambda (x) (>= x 1)) '())" `shouldReturn` Right (AtomBool False)
+
+        describe "list#any" $ do
+          it "should return true if condition is satisfied by all items" $ do
+            eval "(any (lambda (x) (<= x 10)) '(4 2 9 10 (- 99) 4 8))" `shouldReturn` Right (AtomBool True)
+            eval "(any (lambda (x) (<= x 10)) '(20 8 9 3 5 28 12))" `shouldReturn` Right (AtomBool True)
+            eval "(any (lambda (x) (<= x 10)) '(20 99 120 15 11))" `shouldReturn` Right (AtomBool False)
+          it "should return Nil for empty list" $ do
+            eval "(any (lambda (x) (>= x 1)) '())" `shouldReturn` Right (AtomBool False)
+
         describe "list#null?" $ do
           it "should return false for list with any number of items" $ do
             eval "(null? (quote (1 2 3 4 5)))" `shouldReturn` Right (AtomBool False)
           it "should return true for no items" $ do
             eval "(null? Nil)" `shouldReturn` Right (AtomBool True)
             eval "(null? (quote ()))" `shouldReturn` Right (AtomBool True)
+            eval "(null? '())" `shouldReturn` Right (AtomBool True)
 
 ----

@@ -1,16 +1,22 @@
 
+; "Empty check"
 (def null? (ls) (eq? Nil ls))
 
+; "List literal (Will evaluate the list items unlike quote)"
 (def list (... ls) ls)
 
+; "Get list length"
 (def length (ls)
   (if (null? ls) 0 (+ 1 (length (cdr ls)))))
 
+; "Concatenate 2 lists"
 (def concat (x y)
   (if (null? x) y (cons (car x) (concat (cdr x) y))))
 
+; "Append item to the end of the list"
 (def append (ls val) (concat ls (list val)))
 
+; "map/fold/filter"
 (def foldl (fn acc ls)
   (if (null? ls)
     acc
@@ -33,6 +39,11 @@
       (cons (car ls) (filter fn (cdr ls)))
       (filter fn (cdr ls)))))
 
+; "Sum and product of list"
 (def sum (ls) (apply + ls))
-(def product (ls) (apply + ls))
+(def product (ls) (apply * ls))
+
+; "Check if all/any item satisfies predicate"
+(def all (fn ls) (if (null? ls) F (apply and (map fn ls))))
+(def any (fn ls) (if (null? ls) F (apply or (map fn ls))))
 
