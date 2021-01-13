@@ -6,6 +6,7 @@ import Control.Monad.Trans.Except
 import Data.List
 import qualified Data.Map as Map
 import Debug.Trace
+import Effects
 import Errors
 
 type Scope = Map.Map String Atom

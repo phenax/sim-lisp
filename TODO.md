@@ -35,6 +35,8 @@
   - [X] `curry`
   - [ ] `compose`
   - [ ] Fix issue with callstack/scope for function passed as argument with the same param names
+  - [ ] `use` - Import module `(use "./file.sim" (my-fn other-fn))`
+  - [ ] `use` - Importing stdlib `(use math (min max))`
   - [ ] Fix leaking scope issue for (function params conflict with scope variables)
   - [ ] Better errors for argument length mismatch
   - [ ] Allow builtins to be first-class atoms
@@ -52,7 +54,6 @@
   - [ ] More error test cases
   - [ ] Generalize errors
   - [ ] Error line numbers
-  - [ ] `import` - Import module
   - [ ] core stdlib
   - [ ] list stdlib
   - [ ] string stdlib

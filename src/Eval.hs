@@ -14,7 +14,7 @@ import Data.FileEmbed
 import Data.List
 import qualified Data.Map as Map
 import Debug.Trace
-import qualified Effects.ConsoleIO as ConsoleIO
+import qualified Effects as Eff
 import Errors
 import LParser
 import Utils
@@ -73,7 +73,7 @@ builtins =
 displayE :: Evaluator
 displayE callstack exprs = do
   result <- concatM . map (fmap show . evalExpressionPure callstack) $ exprs
-  liftExceptT . ConsoleIO.putStrLn . intercalate "" $ result
+  liftExceptT . Eff.putStrLn . intercalate "" $ result
   return (AtomNil, callstack)
 
 typeCheck :: (Atom -> Bool) -> Evaluator
