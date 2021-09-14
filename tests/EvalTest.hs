@@ -359,14 +359,32 @@ tests = do
                 ((foobar + 5) 20)
               |]
               `shouldReturn` Right (AtomInt 22)
+          it "should allow caller scope to be deeper than closure scope" $ do
+            eval
+              [r|
+                ; Uses variable name `x` which prevents conflict with `a,b,c`
+                (def comp (f1 f2) (lambda (x) (f1 (f2 x))))
+                (def add10 (a) (lambda (b) (lambda (c) (+ a 10))))
+                (def getresult (comp ((add10 4) 5) ((add10 6) 7) ))
+                (getresult 1)
+              |]
+              `shouldReturn` Right (AtomInt 14)
           xit "should allow caller scope to be deeper than closure scope" $ do
             eval
               [r|
-                (def comp (f1 f2) (lambda (x) (f1 (f2 x))))
-                (def add10 (x) (+ x 10))
-                (def getresult (comp add10 add10))
-                (getresult 5)
+                ; Variable `a` will conflict with `a` that is lower in the call stack in add10
+                (def comp (f1 f2) (lambda (a) (f1 (f2 a))))
+                (def add10 (a) (lambda (b) (+ a 10)))
+                (def getresult (comp (add10 4) (add10 6) ))
+                (getresult 1)
               |]
-              `shouldReturn` Right (AtomInt 22)
+              `shouldReturn` Right (AtomInt 14)
+          fit "should allow closure scope to be deeper than caller scope" $ do
+            eval
+              [r|
+                (def foobar (fn) (lambda (a b) (fn a b)))
+                ((foobar +) 5 20)
+              |]
+              `shouldReturn` Right (AtomInt 25)
 
 --

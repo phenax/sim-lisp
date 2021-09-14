@@ -8,24 +8,30 @@ import qualified Data.Map as Map
 import Debug.Trace
 import Effects
 import Errors
+import System.Random
 
 type Scope = Map.Map String Atom
 
 type CallStack = [Scope]
 
-scopeIdKey = "$('scopeId')"
+type ScopeId = Integer
 
-scopeFromPairs :: [(String, Atom)] -> Scope
-scopeFromPairs = Map.fromList -- . ((scopeIdKey, AtomInt 5) :)
+scopeIdKey = "#('scope')"
 
-emptyScope :: Scope
-emptyScope = scopeFromPairs []
+newScopeId :: ExceptWithEvalError ScopeId
+newScopeId = liftExceptT (randomRIO (0, 999999) :: IO ScopeId)
+
+scopeFromPairs :: ScopeId -> [(String, Atom)] -> Scope
+scopeFromPairs sid = Map.fromList . ((scopeIdKey, AtomInt sid) :)
+
+emptyScope :: ScopeId -> Scope
+emptyScope sid = scopeFromPairs sid []
 
 mergeScope :: Scope -> Scope -> Scope
 mergeScope = Map.union
 
-emptyCallStack :: CallStack
-emptyCallStack = [emptyScope]
+emptyCallStack :: ScopeId -> CallStack
+emptyCallStack sid = [emptyScope sid]
 
 findDefinition :: String -> CallStack -> Maybe Atom
 findDefinition key [] = Nothing
@@ -38,16 +44,33 @@ pushToStack cs s = s : cs
 
 defineInScope :: String -> Atom -> CallStack -> CallStack
 defineInScope key value = \case
-  [] -> [Map.insert key value emptyScope]
+  [] -> [Map.insert key value (emptyScope 0)]
   (scope : stack) -> Map.insert key value scope : stack
 
+mapFst fn (a, b) = (fn a, b)
+
 -- TODO: The name conflict problem is here somewhere
+-- Find common parent
+-- Merge everything above (before the scope in callstack) common parent
+-- Keep closure scope for everything after
 mergeCallStack :: CallStack -> CallStack -> CallStack
 mergeCallStack [] [] = []
 mergeCallStack x [] = x
 mergeCallStack [] x = x
 mergeCallStack closure calling =
-  mergeCallStack (init closure) (init calling) ++ [mergeScope (last calling) (last closure)]
+  let lastId = Map.lookup scopeIdKey . last
+      splitAtDivergence [] [] = Nothing
+      splitAtDivergence x [] = Just ([], (x, []))
+      splitAtDivergence [] x = Just ([], ([], x))
+      splitAtDivergence c1 c2 = do
+        c1id <- lastId c1
+        c2id <- lastId c2
+        if c1id == c2id
+          then mapFst (\ls -> ls ++ [mergeScope (last c1) (last c2)]) <$> splitAtDivergence (init c1) (init c2)
+          else Just ([], (c1, c2))
+   in trace ("CLOSURE: " ++ showCallStack closure) . maybe closure (\(ls, (cl, _)) -> ls ++ cl) $ splitAtDivergence closure calling
+
+--in mergeCallStack (init closure) (init calling) ++ [mergeScope (last calling) (last closure)]
 
 showCallStack :: CallStack -> String
 showCallStack = intercalate "\n" . ("STACK" :) . map printScope

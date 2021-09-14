@@ -13,6 +13,7 @@ let
     bytestring
     containers
     file-embed
+    random
     parsec
     raw-strings-qq
     transformers

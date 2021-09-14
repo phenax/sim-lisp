@@ -145,7 +145,8 @@ resolveScope sc binding = do
 letbindingE :: Evaluator
 letbindingE callstack = \case
   [SymbolExpression params, expression] -> do
-    new <- foldl resolveScope (pure $ pushToStack callstack emptyScope) . map letPair $ params
+    sid <- newScopeId
+    new <- foldl resolveScope (pure $ pushToStack callstack (emptyScope sid)) . map letPair $ params
     evalExpression new expression
   _ -> withErr $ EvalError "Invalid `let` expression"
 
@@ -224,11 +225,12 @@ consE callstack = \case
         _ -> withErr $ EvalError "Invalid argument passed to `cons`"
   _ -> withErr $ EvalError "Invalid number of arguments passed to `cons`"
 
-lambdaClosure :: [String] -> CallStack -> [Expression] -> ExceptWithEvalError CallStack
-lambdaClosure params callstack args =
-  toClosureScope . map fst <$> concatM (map (evalExpression callstack) args)
+lambdaClosure :: [String] -> CallStack -> [Atom] -> ExceptWithEvalError CallStack
+lambdaClosure params callstack = toClosureScope
   where
-    toClosureScope = pushToStack callstack . scopeFromPairs . zipParams params
+    toClosureScope expr = do
+      sid <- newScopeId
+      return $ pushToStack callstack . scopeFromPairs sid . zipParams params $ expr
     zipParams ps argValues = case ps of
       [] -> []
       ["...", restP] -> [(restP, listExpr)]
@@ -237,19 +239,19 @@ lambdaClosure params callstack args =
           listExpr = if null argValues then AtomNil else toList argValues
       (param : rest) -> (param, head argValues) : zipParams rest (tail argValues)
 
-applyLambda :: [String] -> Expression -> Evaluator
-applyLambda params body callstack arguments = do
-  newClosure <- lambdaClosure params callstack arguments
+applyLambda :: [String] -> Expression -> CallStack -> Evaluator
+applyLambda params body closureStack callstack arguments = do
+  evaluatedArgs <- concatM (map (evalExpressionPure callstack) arguments)
+  newClosure <- lambdaClosure params (mergeCallStack closureStack callstack) evaluatedArgs
   result <- evalExpressionPure newClosure body
-  return $ trace ("Trace :: " ++ show params ++ " --- " ++ showCallStack (init newClosure)) (result, callstack)
+  return (result, callstack)
 
 applyAsSymbol :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalError (Atom, CallStack))
 applyAsSymbol fn callstack arguments = evaluateValue <$> findDefinition fn callstack
   where
     evaluateValue = \case
       AtomLambda closureStack params body ->
-        trace ("Function ::::::: " ++ fn ++ " -- " ++ showCallStack (init callstack)) $
-          applyLambda params body (mergeCallStack closureStack callstack) arguments
+        applyLambda params body closureStack callstack arguments
       _ -> withErr $ EvalError ("Invalid call. `" ++ fn ++ "` is not a function")
 
 applyBuiltin :: String -> CallStack -> [Expression] -> Maybe (ExceptWithEvalError (Atom, CallStack))
@@ -294,7 +296,7 @@ evalExpression callstack = \case
       _ -> withErr $ EvalError ("TODO: Not impl 1 -- " ++ show exprs)
     where
       lst = tail exprs
-      runLambda cs params body = applyLambda params body (mergeCallStack cs callstack) lst
+      runLambda cs params body = applyLambda params body cs callstack lst
       symListExprE exprs =
         evalExpressionPure callstack (SymbolExpression exprs) >>= \case
           AtomLambda closureStack params body -> runLambda closureStack params body
@@ -312,7 +314,9 @@ evaluateWithStdlib parent exprs = do
   evaluateWithScope callstack exprs
 
 evaluate :: [Expression] -> EvalResultPure
-evaluate exprs = fst <$> evaluateWithStdlib emptyCallStack exprs
+evaluate exprs = do
+  sid <- newScopeId
+  fst <$> evaluateWithStdlib (emptyCallStack sid) exprs
 
 interpret :: CallStack -> String -> EvalResult
 interpret callstack = evaluateWithStdlib callstack <=< except . tokenize
